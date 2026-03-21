@@ -12,6 +12,7 @@
     --muted:rgba(241,245,249,0.5); --r:18px;
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:Papyrus,fantasy}
+  button,.mode-card{touch-action:manipulation}
   body{
     color:var(--text);min-height:100vh;display:flex;flex-direction:column;
     align-items:center;justify-content:center;padding:24px 16px 40px;
@@ -50,7 +51,7 @@
     background:var(--glass);backdrop-filter:blur(20px);
     transition:background .2s,border-color .2s,transform .15s;user-select:none;
   }
-  .mode-card:hover{background:var(--glass-h);transform:translateY(-2px)}
+  @media(hover:hover){.mode-card:hover{background:var(--glass-h);transform:translateY(-2px)}}
   .mode-card.selected{border-color:var(--blue);background:rgba(96,165,250,.12)}
   .mode-icon{font-size:2rem;margin-bottom:8px;display:block}
   .mode-title{font-size:.95rem;font-weight:700;margin-bottom:3px}
@@ -60,7 +61,7 @@
     padding:16px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;
     transition:opacity .15s,transform .1s;
   }
-  .btn-start:hover{opacity:.9;transform:translateY(-1px)}
+  @media(hover:hover){.btn-start:hover{opacity:.9;transform:translateY(-1px)}}
   .btn-start:active{transform:translateY(1px)}
   .hs-row{padding:13px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem}
   .hs-row .hs-label{color:var(--muted)}
@@ -87,7 +88,7 @@
     color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
     transition:background .15s,color .15s,border-color .15s;
   }
-  .btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}
+  @media(hover:hover){.btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}}
   .mode-toggle{
     display:flex;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
     border-radius:99px;padding:4px;gap:4px;backdrop-filter:blur(20px);
@@ -113,7 +114,7 @@
     text-align:left;width:100%;backdrop-filter:blur(20px);
     transition:background .15s,border-color .15s,transform .1s;
   }
-  .opt-btn:hover:not(:disabled){background:var(--glass-h);border-color:rgba(255,255,255,.28);transform:translateX(3px)}
+  @media(hover:hover){.opt-btn:hover:not(:disabled){background:var(--glass-h);border-color:rgba(255,255,255,.28);transform:translateX(3px)}}
   .opt-btn:disabled{cursor:default}
   .opt-btn.correct{background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green)}
   .opt-btn.wrong  {background:rgba(248,113,113,.13);border-color:var(--red);color:var(--red)}
@@ -151,13 +152,13 @@
     padding:15px;font-size:1rem;font-weight:700;cursor:pointer;
     transition:opacity .15s,transform .1s;
   }
-  .btn-again:hover{opacity:.9;transform:translateY(-1px)}
+  @media(hover:hover){.btn-again:hover{opacity:.9;transform:translateY(-1px)}}
   .btn-home{
     background:transparent;color:var(--muted);border:1px solid var(--glass-b);
     border-radius:var(--r);padding:13px;font-size:.9rem;cursor:pointer;
     transition:border-color .15s,color .15s;
   }
-  .btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}
+  @media(hover:hover){.btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}}
 
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
@@ -169,6 +170,18 @@
     .game-body{grid-template-columns:1fr}
     .wrap.game-active{max-width:520px}
     .home-hero h1{font-size:2rem}
+    .home-hero{padding:28px 20px 22px}
+    .result-card{padding:28px 20px}
+    .q-card{min-height:200px;padding:20px 16px}
+    .hud{padding:10px 12px;gap:8px}
+    .mode-pill{font-size:.72rem;padding:6px 8px}
+  }
+  @media(max-width:380px){
+    .home-hero h1{font-size:1.7rem}
+    .result-score-big{font-size:3.5rem}
+    .hud-score{font-size:.8rem}
+    .timer-text{font-size:.8rem}
+    .streak-badge{font-size:.66rem;padding:3px 8px}
   }
 </style>
 </head>
@@ -196,7 +209,7 @@
       <span class="hs-label">🏆 Isiklik rekord</span>
       <span class="hs-val" id="hs-display">1 õiget</span>
     </div>
-    <a href="file:///Users/vahurivoolaid/Downloads/euromaailm.html" style="text-align: center; color: var(--muted); font-size: 0.82rem; text-decoration: none; padding: 4px 0px; transition: color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Euromaailma</a>
+    <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:.82rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
   </div>
 
   <div id="game" style="display: none;">
