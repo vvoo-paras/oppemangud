@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lipumäng</title>
+<style>
+  :root {
+    --green:#4ade80; --red:#f87171; --blue:#60a5fa; --gold:#fbbf24;
+    --glass:rgba(255,255,255,0.07); --glass-b:rgba(255,255,255,0.13);
+    --glass-h:rgba(255,255,255,0.12); --text:#f1f5f9;
+    --muted:rgba(241,245,249,0.5); --r:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Papyrus,fantasy}
+  body{
+    color:var(--text);min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:24px 16px 40px;
+    background:#04071a;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80') center/cover no-repeat;
+    opacity:.55;z-index:0;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse at 50% 0%,rgba(30,60,120,.5) 0%,transparent 70%),
+      radial-gradient(ellipse at 80% 100%,rgba(10,30,80,.6) 0%,transparent 60%),
+      linear-gradient(to bottom,rgba(4,7,26,.3),rgba(4,7,26,.7));
+    z-index:0;
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:520px;transition:max-width .4s}
+  .wrap.game-active{max-width:860px}
+  .glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(20px)}
+
+  /* HOME */
+  #home{display:flex;flex-direction:column;gap:14px}
+  .home-hero{padding:40px 32px 34px;text-align:center}
+  .home-hero h1{
+    font-size:2.6rem;font-weight:400;letter-spacing:-.5px;line-height:1.1;margin-bottom:12px;
+    background:linear-gradient(135deg,#fff 40%,#93c5fd);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .home-hero p{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mode-card{
+    padding:20px 16px;text-align:center;cursor:pointer;
+    border:1px solid var(--glass-b);border-radius:var(--r);
+    background:var(--glass);backdrop-filter:blur(20px);
+    transition:background .2s,border-color .2s,transform .15s;user-select:none;
+  }
+  .mode-card:hover{background:var(--glass-h);transform:translateY(-2px)}
+  .mode-card.selected{border-color:var(--blue);background:rgba(96,165,250,.12)}
+  .mode-icon{font-size:2rem;margin-bottom:8px;display:block}
+  .mode-title{font-size:.95rem;font-weight:700;margin-bottom:3px}
+  .mode-desc{font-size:.78rem;color:var(--muted);line-height:1.35}
+  .btn-start{
+    background:var(--blue);color:#fff;border:none;border-radius:var(--r);
+    padding:16px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;
+    transition:opacity .15s,transform .1s;
+  }
+  .btn-start:hover{opacity:.9;transform:translateY(-1px)}
+  .btn-start:active{transform:translateY(1px)}
+  .hs-row{padding:13px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem}
+  .hs-row .hs-label{color:var(--muted)}
+  .hs-row .hs-val{font-weight:700;color:var(--gold)}
+
+  /* GAME */
+  #game{display:none;flex-direction:column;gap:14px}
+  .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
+  .hud-score{font-size:.9rem;font-weight:500;white-space:nowrap;color:var(--muted)}
+  .hud-score span{color:var(--text);font-size:1.15rem;font-weight:700}
+  .timer-wrap{display:flex;align-items:center;gap:10px;flex:1}
+  .timer-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+  .timer-bar{height:100%;background:var(--green);border-radius:99px;transition:width 1s linear,background .5s}
+  .timer-text{font-size:.9rem;font-weight:700;min-width:24px;text-align:right;color:var(--muted)}
+  .streak-badge{
+    background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+    color:var(--gold);font-size:.72rem;font-weight:700;
+    padding:4px 10px;border-radius:99px;display:none;white-space:nowrap;
+  }
+  .streak-badge.show{display:block}
+  .btn-stop{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;width:28px;height:28px;font-size:.7rem;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}
+  .mode-toggle{
+    display:flex;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;padding:4px;gap:4px;backdrop-filter:blur(20px);
+  }
+  .mode-pill{
+    flex:1;text-align:center;padding:7px 12px;border-radius:99px;
+    font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);
+    border:none;background:transparent;transition:background .2s,color .2s;
+  }
+  .mode-pill.active{background:var(--blue);color:#fff}
+  .game-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  .q-card{
+    padding:32px 24px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:300px;
+  }
+  .q-country{font-size:2rem;font-weight:400;line-height:1.2}
+  .options{display:flex;flex-direction:column;gap:10px;justify-content:center;height:100%}
+  .opt-btn{
+    background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+    padding:12px 16px;font-size:1.05rem;font-weight:500;color:var(--text);
+    cursor:pointer;display:flex;align-items:center;gap:12px;
+    text-align:left;width:100%;backdrop-filter:blur(20px);
+    transition:background .15s,border-color .15s,transform .1s;
+  }
+  .opt-btn:hover:not(:disabled){background:var(--glass-h);border-color:rgba(255,255,255,.28);transform:translateX(3px)}
+  .opt-btn:disabled{cursor:default}
+  .opt-btn.correct{background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green)}
+  .opt-btn.wrong  {background:rgba(248,113,113,.13);border-color:var(--red);color:var(--red)}
+  .opt-btn.reveal {background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green);animation:pulse .4s ease}
+  .opt-btn.flag-opt{justify-content:center;padding:10px 12px}
+  .opt-letter{
+    width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.78rem;flex-shrink:0;color:var(--muted);
+  }
+  .opt-btn.correct .opt-letter,.opt-btn.reveal .opt-letter{background:rgba(74,222,128,.2);color:var(--green)}
+  .opt-btn.wrong .opt-letter{background:rgba(248,113,113,.2);color:var(--red)}
+  .opt-flag-img{width:100%;height:84px;object-fit:contain;border-radius:6px;pointer-events:none;display:block}
+
+  /* RESULT */
+  #result{display:none;flex-direction:column;gap:14px}
+  .result-card{padding:40px 32px;text-align:center}
+  .result-emoji{font-size:3.5rem;margin-bottom:10px;display:block}
+  .result-title{font-size:2rem;font-weight:400;margin-bottom:6px}
+  .result-sub{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+  .result-score-big{font-size:4.5rem;font-weight:700;color:var(--blue);line-height:1;letter-spacing:-2px}
+  .result-score-label{font-size:.75rem;color:var(--muted);margin:4px 0 28px;text-transform:uppercase;letter-spacing:1px}
+  .new-best{
+    display:inline-block;margin-bottom:16px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.28);
+    color:var(--gold);font-size:.78rem;font-weight:700;padding:5px 14px;border-radius:99px;
+  }
+  .result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+  .stat-box{background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:12px;padding:14px 10px}
+  .stat-num{font-size:1.5rem;font-weight:700}
+  .stat-lbl{font-size:.72rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+  .result-btns{display:flex;flex-direction:column;gap:10px}
+  .btn-again{
+    background:var(--blue);color:#fff;border:none;border-radius:var(--r);
+    padding:15px;font-size:1rem;font-weight:700;cursor:pointer;
+    transition:opacity .15s,transform .1s;
+  }
+  .btn-again:hover{opacity:.9;transform:translateY(-1px)}
+  .btn-home{
+    background:transparent;color:var(--muted);border:1px solid var(--glass-b);
+    border-radius:var(--r);padding:13px;font-size:.9rem;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  .btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}
+
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .shake{animation:shake .35s ease}
+  @keyframes fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fade-up .28s ease forwards}
+
+  @media(max-width:620px){
+    .game-body{grid-template-columns:1fr}
+    .wrap.game-active{max-width:520px}
+    .home-hero h1{font-size:2rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="home">
+    <div class="glass home-hero">
+      <h1>Lipumäng</h1>
+      <p>Aega on 60 sekundit. 44 riiki.<br>Mitu lippu saad pihta?</p>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card selected" data-mode="flag-to-name" onclick="selectMode('flag-to-name')">
+        <span class="mode-icon">🏳️</span>
+        <div class="mode-title">Lipp → Riik</div>
+        <div class="mode-desc">Vaata lippu, vali riik</div>
+      </div>
+      <div class="mode-card" data-mode="name-to-flag" onclick="selectMode('name-to-flag')">
+        <span class="mode-icon">🔍</span>
+        <div class="mode-title">Riik → Lipp</div>
+        <div class="mode-desc">Vaata riiki, vali lipp</div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Alusta →</button>
+    <div class="glass hs-row" id="hs-row" style="display:none">
+      <span class="hs-label">🏆 Isiklik rekord</span>
+      <span class="hs-val" id="hs-display">—</span>
+    </div>
+    <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:.82rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+  </div>
+
+  <div id="game">
+    <div class="glass hud">
+      <div class="hud-score">Skoor <span id="score-display">0</span></div>
+      <div class="streak-badge" id="streak-badge">🔥 <span id="streak-num">0</span> järjest</div>
+      <div class="timer-wrap">
+        <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar"></div></div>
+        <div class="timer-text" id="timer-text">60</div>
+      </div>
+      <button class="btn-stop" onclick="endGame()" title="Lõpeta mäng">✕</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-pill active" id="pill-flag-to-name" onclick="switchMode('flag-to-name')">🏳️ Lipp → Riik</button>
+      <button class="mode-pill" id="pill-name-to-flag" onclick="switchMode('name-to-flag')">🔍 Riik → Lipp</button>
+    </div>
+    <div class="game-body">
+      <div class="glass q-card" id="q-card"><div id="q-visual"></div></div>
+      <div class="options" id="options"></div>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="glass result-card">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-title" id="result-title">Aeg läbi!</div>
+      <div class="result-sub" id="result-sub">Siin on sinu tulemus</div>
+      <div id="new-best-badge" style="display:none"><span class="new-best">✨ Uus isiklik rekord</span></div>
+      <div class="result-score-big" id="result-score">0</div>
+      <div class="result-score-label">õiget vastust</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-num" id="stat-correct" style="color:var(--green)">0</div><div class="stat-lbl">Õige</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-wrong" style="color:var(--red)">0</div><div class="stat-lbl">Vale</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-best" style="color:var(--gold)">0</div><div class="stat-lbl">Rekord</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-acc" style="color:var(--blue)">0%</div><div class="stat-lbl">Täpsus</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-again" onclick="startGame()">Mängi uuesti →</button>
+        <button class="btn-home" onclick="showHome()">Muuda mängulaadi</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const ET = {
+  "Albania":"Albaania","Andorra":"Andorra","Austria":"Austria",
+  "Belarus":"Valgevene","Belgium":"Belgia","Bosnia & Herzegovina":"Bosnia ja Hertsegoviina",
+  "Bulgaria":"Bulgaaria","Croatia":"Horvaatia","Cyprus":"Küpros",
+  "Czech Republic":"Tšehhi","Denmark":"Taani","Estonia":"Eesti",
+  "Finland":"Soome","France":"Prantsusmaa","Germany":"Saksamaa",
+  "Greece":"Kreeka","Hungary":"Ungari","Iceland":"Island",
+  "Ireland":"Iirimaa","Italy":"Itaalia","Kosovo":"Kosovo",
+  "Latvia":"Läti","Liechtenstein":"Liechtenstein","Lithuania":"Leedu",
+  "Luxembourg":"Luksemburg","Malta":"Malta","Moldova":"Moldova",
+  "Monaco":"Monaco","Montenegro":"Montenegro","Netherlands":"Madalmaad",
+  "North Macedonia":"Põhja-Makedoonia","Norway":"Norra","Poland":"Poola",
+  "Portugal":"Portugal","Romania":"Rumeenia","San Marino":"San Marino",
+  "Serbia":"Serbia","Slovakia":"Slovakkia","Slovenia":"Sloveenia",
+  "Spain":"Hispaania","Sweden":"Rootsi","Switzerland":"Šveits",
+  "Ukraine":"Ukraina","United Kingdom":"Ühendkuningriik"
+};
+const COUNTRIES = [
+  {name:"Albania",code:"al"},{name:"Andorra",code:"ad"},{name:"Austria",code:"at"},
+  {name:"Belarus",code:"by"},{name:"Belgium",code:"be"},{name:"Bosnia & Herzegovina",code:"ba"},
+  {name:"Bulgaria",code:"bg"},{name:"Croatia",code:"hr"},{name:"Cyprus",code:"cy"},
+  {name:"Czech Republic",code:"cz"},{name:"Denmark",code:"dk"},{name:"Estonia",code:"ee"},
+  {name:"Finland",code:"fi"},{name:"France",code:"fr"},{name:"Germany",code:"de"},
+  {name:"Greece",code:"gr"},{name:"Hungary",code:"hu"},{name:"Iceland",code:"is"},
+  {name:"Ireland",code:"ie"},{name:"Italy",code:"it"},{name:"Kosovo",code:"xk"},
+  {name:"Latvia",code:"lv"},{name:"Liechtenstein",code:"li"},{name:"Lithuania",code:"lt"},
+  {name:"Luxembourg",code:"lu"},{name:"Malta",code:"mt"},{name:"Moldova",code:"md"},
+  {name:"Monaco",code:"mc"},{name:"Montenegro",code:"me"},{name:"Netherlands",code:"nl"},
+  {name:"North Macedonia",code:"mk"},{name:"Norway",code:"no"},{name:"Poland",code:"pl"},
+  {name:"Portugal",code:"pt"},{name:"Romania",code:"ro"},{name:"San Marino",code:"sm"},
+  {name:"Serbia",code:"rs"},{name:"Slovakia",code:"sk"},{name:"Slovenia",code:"si"},
+  {name:"Spain",code:"es"},{name:"Sweden",code:"se"},{name:"Switzerland",code:"ch"},
+  {name:"Ukraine",code:"ua"},{name:"United Kingdom",code:"gb"}
+];
+
+const t = name => ET[name] || name;
+const flagUrl = (code, w=320) => `https://flagcdn.com/w${w}/${code}.png`;
+const el = id => document.getElementById(id);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+
+let mode='flag-to-name', score=0, wrong=0, streak=0;
+let timeLeft=60, timer=null, answered=false, currentCorrect=null;
+let masteredSet=new Set(), pool=[];
+
+function buildPool() {
+  pool = shuffle(COUNTRIES.filter(c => !masteredSet.has(c.name)));
+  if(!pool.length) { masteredSet.clear(); pool = shuffle([...COUNTRIES]); }
+}
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('selected', c.dataset.mode===m));
+}
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id===`pill-${m}`));
+  nextQuestion();
+}
+
+function showHome() {
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
+  const hs = +localStorage.getItem('fq_hs')||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+}
+function startGame() {
+  score=0; wrong=0; streak=0; timeLeft=60; answered=false;
+  masteredSet.clear(); pool=[];
+  document.querySelector('.wrap').classList.add('game-active');
+  el('home').style.display='none'; el('result').style.display='none'; el('game').style.display='flex';
+  el('score-display').textContent='0';
+  el('streak-badge').classList.remove('show');
+  el(`pill-${mode}`).classList.add('active');
+  updateTimer();
+  clearInterval(timer); timer=setInterval(tick,1000);
+  nextQuestion();
+}
+function tick() { if(--timeLeft<=0) endGame(); else updateTimer(); }
+function updateTimer() {
+  el('timer-bar').style.width=(timeLeft/60*100)+'%';
+  el('timer-bar').style.background=timeLeft>20?'var(--green)':timeLeft>10?'var(--gold)':'var(--red)';
+  el('timer-text').textContent=timeLeft;
+}
+function nextQuestion() {
+  answered=false;
+  if(!pool.length) buildPool();
+  currentCorrect=pool.shift();
+  const opts=shuffle([currentCorrect,...shuffle(COUNTRIES.filter(c=>c.name!==currentCorrect.name)).slice(0,2)]);
+
+  const qCard=el('q-card');
+  qCard.classList.remove('fade-up'); void qCard.offsetWidth; qCard.classList.add('fade-up');
+
+  const vis=el('q-visual'); vis.innerHTML='';
+  const optEl=el('options'); optEl.innerHTML='';
+
+  if(mode==='flag-to-name') {
+    const img=new Image(); img.src=flagUrl(currentCorrect.code); img.alt='';
+    img.style.cssText='width:100%;max-width:260px;height:auto;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:block;';
+    vis.appendChild(img);
+    opts.forEach((o,i) => {
+      const btn=document.createElement('button');
+      btn.className='opt-btn'; btn.dataset.country=o.name;
+      btn.innerHTML=`<div class="opt-letter">${'ABC'[i]}</div><span>${t(o.name)}</span>`;
+      btn.onclick=()=>pick(btn,o);
+      optEl.appendChild(btn);
+    });
+  } else {
+    const d=document.createElement('div');
+    d.className='q-country'; d.textContent=t(currentCorrect.name);
+    vis.appendChild(d);
+    opts.forEach(o => {
+      const btn=document.createElement('button');
+      btn.className='opt-btn flag-opt'; btn.dataset.country=o.name;
+      const img=new Image(); img.src=flagUrl(o.code); img.alt=o.name; img.className='opt-flag-img';
+      btn.appendChild(img); btn.onclick=()=>pick(btn,o);
+      optEl.appendChild(btn);
+    });
+  }
+}
+function pick(btn, chosen) {
+  if(answered) return; answered=true;
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  if(chosen.name===currentCorrect.name) {
+    btn.classList.add('correct');
+    masteredSet.add(currentCorrect.name);
+    el('score-display').textContent=++score;
+    if(++streak>=3) { el('streak-badge').classList.add('show'); el('streak-num').textContent=streak; }
+    setTimeout(nextQuestion,850);
+  } else {
+    btn.classList.add('wrong','shake'); wrong++; streak=0;
+    el('streak-badge').classList.remove('show');
+    document.querySelectorAll('.opt-btn').forEach(b=>{ if(b.dataset.country===currentCorrect.name) b.classList.add('reveal'); });
+    setTimeout(nextQuestion,1400);
+  }
+}
+function endGame() {
+  clearInterval(timer);
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('game').style.display='none'; el('result').style.display='flex';
+  const acc=score+wrong>0?Math.round(score/(score+wrong)*100):0;
+  const hs=+localStorage.getItem('fq_hs')||0;
+  const newBest=score>hs; if(newBest) localStorage.setItem('fq_hs',score);
+  el('result-score').textContent=el('stat-correct').textContent=score;
+  el('stat-wrong').textContent=wrong;
+  el('stat-best').textContent=newBest?score:hs;
+  el('stat-acc').textContent=acc+'%';
+  el('new-best-badge').style.display=newBest&&score?'block':'none';
+  const r = score===0 ? ['😬','Raske voor','Proovi uuesti — sa üllatad ennast!']
+    : score>=20 ? ['🏆','Lippude meister','Vapustav — sa tunned lippe tõesti!']
+    : score>=12 ? ['🌟','Suurepärane!','Oled lippude tundmise teel!']
+    : score>=6  ? ['👍','Mitte paha','Veel natuke harjutust ja oled meister!']
+    :             ['😅','Tubli pingutus','Harjuta edasi — sa jõuad sinna!'];
+  el('result-emoji').textContent=r[0]; el('result-title').textContent=r[1]; el('result-sub').textContent=r[2];
+}
+showHome();
+</script>
+</body>
+</html>

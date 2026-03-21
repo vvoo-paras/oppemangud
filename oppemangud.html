@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Õppemängud</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #080c14;
+    --card:   rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.09);
+    --border-h: rgba(255,255,255,0.22);
+    --text:   #eef2f7;
+    --muted:  rgba(238,242,247,0.45);
+    --dim:    rgba(238,242,247,0.2);
+    --r:      20px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-layer {
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 80% 50% at 10% 0%,  rgba(56,110,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(100,200,120,0.08) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(255,255,255,0.02) 0%, transparent 70%);
+  }
+
+  /* ── LAYOUT ── */
+  .page { position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:0 24px 80px; }
+
+  /* ── NAV ── */
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:28px 0 0;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
+    margin-bottom:72px;
+  }
+  .nav-logo {
+    font-family:'Syne',sans-serif;
+    font-size:1.1rem; font-weight:800; letter-spacing:-.3px;
+    color:var(--text); text-decoration:none;
+  }
+  .nav-logo span { color:rgba(100,180,255,0.9); }
+  .nav-tag {
+    font-size:.7rem; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--dim);
+  }
+
+  /* ── HERO ── */
+  .hero { margin-bottom:64px; }
+  .hero-eyebrow {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:.72rem; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--dim);
+    margin-bottom:20px;
+  }
+  .hero-eyebrow::before {
+    content:''; width:20px; height:1px; background:var(--dim);
+  }
+  .hero h1 {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(3rem,8vw,5.5rem);
+    font-weight:800; line-height:.95;
+    letter-spacing:-2px; color:var(--text);
+    margin-bottom:24px;
+  }
+  .hero h1 em {
+    font-style:normal;
+    -webkit-text-stroke:1px rgba(255,255,255,0.3);
+    color:transparent;
+  }
+  .hero p {
+    font-size:1.05rem; color:var(--muted);
+    line-height:1.7; max-width:480px;
+  }
+  .hero-stats {
+    display:flex; gap:40px; margin-top:40px; flex-wrap:wrap;
+  }
+  .stat { border-left:1px solid var(--border); padding-left:16px; }
+  .stat-num {
+    font-family:'Syne',sans-serif;
+    font-size:1.6rem; font-weight:700; line-height:1;
+    color:var(--text);
+  }
+  .stat-lbl { font-size:.72rem; color:var(--dim); margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
+
+  /* ── SECTION LABEL ── */
+  .section-head {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:24px;
+    font-size:.72rem; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--dim);
+  }
+  .section-head::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── GRID ── */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+    gap:16px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    overflow:hidden;
+    text-decoration:none;
+    color:var(--text);
+    display:flex; flex-direction:column;
+    transition:border-color .2s, transform .2s, background .2s;
+    position:relative;
+  }
+  .card.live:hover {
+    border-color:var(--border-h);
+    transform:translateY(-3px);
+    background:rgba(255,255,255,0.08);
+  }
+  .card.soon { opacity:.5; cursor:default; }
+
+  /* Coloured top accent line */
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0;
+    height:2px; border-radius:var(--r) var(--r) 0 0;
+    background:var(--accent, transparent);
+    transition:opacity .2s;
+  }
+
+  .card-thumb {
+    height:160px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:3.8rem;
+    position:relative;
+    background:var(--thumb-bg, rgba(255,255,255,0.03));
+    border-bottom:1px solid var(--border);
+    overflow:hidden;
+  }
+  /* Subtle radial glow behind icon */
+  .card-thumb::after {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 50% 60%, var(--glow, rgba(255,255,255,0.04)) 0%, transparent 70%);
+  }
+
+  .card-pill {
+    position:absolute; top:12px; right:12px;
+    font-family:'DM Sans',sans-serif;
+    font-size:.62rem; font-weight:600; letter-spacing:1.2px;
+    text-transform:uppercase;
+    padding:3px 10px; border-radius:99px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.12);
+    color:var(--text); z-index:1;
+  }
+  .card-pill.live-pill {
+    background:rgba(74,222,128,0.12);
+    border-color:rgba(74,222,128,0.3);
+    color:#4ade80;
+  }
+
+  .card-body { padding:20px 22px 24px; flex:1; display:flex; flex-direction:column; gap:6px; }
+  .card-tag { font-size:.68rem; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); }
+  .card-title {
+    font-family:'Syne',sans-serif;
+    font-size:1.25rem; font-weight:700; line-height:1.15;
+  }
+  .card-desc { font-size:.85rem; color:var(--muted); line-height:1.6; flex:1; margin-top:2px; }
+  .card-cta {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:.8rem; font-weight:600; color:var(--accent-text, var(--muted));
+    margin-top:16px; transition:gap .15s;
+  }
+  .card.live:hover .card-cta { gap:10px; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top:80px;
+    padding-top:24px;
+    border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:.78rem; color:var(--dim); flex-wrap:wrap; gap:12px;
+  }
+  .footer-logo {
+    font-family:'Syne',sans-serif; font-weight:800; font-size:.9rem;
+    color:var(--dim); letter-spacing:-.2px;
+  }
+
+  @media(max-width:520px){
+    .hero h1 { font-size:2.6rem; letter-spacing:-1px; }
+    .hero-stats { gap:24px; }
+    nav { margin-bottom:48px; }
+    .hero { margin-bottom:48px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="page">
+
+  <nav>
+    <a class="nav-logo" href="#">Õppe<span>mängud</span></a>
+    <span class="nav-tag">Kooliõpilastele · 7–15</span>
+  </nav>
+
+  <div class="section-head">Mängud</div>
+
+  <div class="grid">
+
+    <!-- Lipumäng -->
+    <a class="card live" href="flag-quiz-v1.html"
+       style="--accent:rgba(96,165,250,0.8);--glow:rgba(96,165,250,0.1);--accent-text:#60a5fa">
+      <div class="card-thumb" style="--thumb-bg:rgba(96,165,250,0.05)">
+        🏳️
+        <span class="card-pill live-pill">Saadaval</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Geograafia · Euroopa</div>
+        <div class="card-title">Lipumäng</div>
+        <div class="card-desc">Tunne ära Euroopa riikide lipud. 44 riiki, 60 sekundit — mitu saad pihta?</div>
+        <div class="card-cta">Mängi →</div>
+      </div>
+    </a>
+
+    <!-- Linnumäng -->
+    <a class="card live" href="bird-quiz.html"
+       style="--accent:rgba(74,222,128,0.8);--glow:rgba(74,222,128,0.1);--accent-text:#4ade80">
+      <div class="card-thumb" style="--thumb-bg:rgba(74,222,128,0.05)">
+        🐦
+        <span class="card-pill live-pill">Saadaval</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Loodus · Eesti</div>
+        <div class="card-title">Linnumäng</div>
+        <div class="card-desc">Õpi tundma Eesti linde piltide järgi. 20 liiki, 2 mängulaadi.</div>
+        <div class="card-cta">Mängi →</div>
+      </div>
+    </a>
+
+    <!-- Pealinnamäng (coming soon) -->
+    <div class="card soon"
+         style="--accent:rgba(251,191,36,0.6);--glow:rgba(251,191,36,0.08)">
+      <div class="card-thumb" style="--thumb-bg:rgba(251,191,36,0.03)">
+        🏛️
+        <span class="card-pill">Tulemas</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Geograafia · Euroopa</div>
+        <div class="card-title">Pealinnamäng</div>
+        <div class="card-desc">Mis on Horvaatia pealinn? Testi teadmisi Euroopa pealinnade kohta.</div>
+      </div>
+    </div>
+
+    <!-- Loomamäng (coming soon) -->
+    <div class="card soon"
+         style="--accent:rgba(248,113,113,0.6);--glow:rgba(248,113,113,0.08)">
+      <div class="card-thumb" style="--thumb-bg:rgba(248,113,113,0.03)">
+        🦊
+        <span class="card-pill">Tulemas</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Loodus · Eesti</div>
+        <div class="card-title">Loomamäng</div>
+        <div class="card-desc">Tunne ära Eesti metsaloomad. Rebane, ilves, karu — kas tead kõiki?</div>
+      </div>
+    </div>
+
+    <!-- Kaardiots (coming soon) -->
+    <div class="card soon"
+         style="--accent:rgba(167,139,250,0.6);--glow:rgba(167,139,250,0.08)">
+      <div class="card-thumb" style="--thumb-bg:rgba(167,139,250,0.03)">
+        🗺️
+        <span class="card-pill">Tulemas</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Geograafia · Euroopa</div>
+        <div class="card-title">Kaardiots</div>
+        <div class="card-desc">Näidatakse riigi nime — klõpsa kaardil õigele kohale. Leia kõik riigid.</div>
+      </div>
+    </div>
+
+    <!-- Taimeõpetus (coming soon) -->
+    <div class="card soon"
+         style="--accent:rgba(34,211,238,0.6);--glow:rgba(34,211,238,0.08)">
+      <div class="card-thumb" style="--thumb-bg:rgba(34,211,238,0.03)">
+        🌿
+        <span class="card-pill">Tulemas</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Loodus · Eesti</div>
+        <div class="card-title">Taimeõpetus</div>
+        <div class="card-desc">Tunne ära Eesti taimed piltide järgi. Männist mustikamarjani.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span class="footer-logo">Õppemängud</span>
+    <span>Tasuta õppemängud kooliõpilastele</span>
+  </footer>
+
+</div>
+</body>
+</html>
