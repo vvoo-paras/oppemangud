@@ -172,6 +172,16 @@
   }
   @media(hover:hover){.btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}}
 
+  /* REVISION */
+  .revision-card{padding:20px 22px}
+  .revision-title{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .revision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+  .revision-item{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.22);border-radius:12px;padding:10px 8px;text-align:center}
+  .revision-flag{width:100%;height:auto;border-radius:5px;display:block;margin-bottom:7px;border:1px solid rgba(255,255,255,.08)}
+  .revision-bird-img{width:100%;height:70px;object-fit:contain;border-radius:5px;display:block;margin-bottom:7px;background:rgba(0,0,0,.2)}
+  .revision-name{font-size:.75rem;font-weight:700;color:var(--text);line-height:1.2}
+  .revision-latin{font-size:.65rem;color:var(--muted);font-style:italic;margin-top:2px}
+
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   .shake{animation:shake .35s ease}
@@ -274,6 +284,10 @@
         <button class="btn-home" onclick="showHome()">Muuda mängulaadi</button>
       </div>
     </div>
+  </div>
+  <div id="revision-section" style="display:none" class="glass revision-card">
+    <div class="revision-title">🔁 Kordamiseks</div>
+    <div id="revision-grid" class="revision-grid"></div>
   </div>
 </div>
 <script>
@@ -412,7 +426,7 @@ let selectedRegion = 'europe';
 let COUNTRIES = REGIONS[selectedRegion].countries;
 let mode='flag-to-name', score=0, wrong=0, streak=0;
 let timeLeft=60, timer=null, answered=false, currentCorrect=null;
-let masteredSet=new Set(), pool=[];
+let masteredSet=new Set(), pool=[], mistakesSet=new Set();
 
 function selectRegion(r) {
   selectedRegion = r;
@@ -440,6 +454,7 @@ function switchMode(m) {
 function showHome() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
+  el('revision-section').style.display='none';
   const hs = +localStorage.getItem('fq_hs_'+selectedRegion)||0;
   if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
   else { el('hs-row').style.display='none'; }
@@ -447,7 +462,7 @@ function showHome() {
 function startGame() {
   COUNTRIES = REGIONS[selectedRegion].countries;
   score=0; wrong=0; streak=0; timeLeft=60; answered=false;
-  masteredSet.clear(); pool=[];
+  masteredSet.clear(); pool=[]; mistakesSet.clear();
   document.querySelector('.wrap').classList.add('game-active');
   el('home').style.display='none'; el('result').style.display='none'; el('game').style.display='flex';
   el('score-display').textContent='0';
@@ -510,6 +525,7 @@ function pick(btn, chosen) {
     setTimeout(nextQuestion,850);
   } else {
     btn.classList.add('wrong','shake'); wrong++; streak=0;
+    mistakesSet.add(currentCorrect.name);
     el('streak-badge').classList.remove('show');
     document.querySelectorAll('.opt-btn').forEach(b=>{ if(b.dataset.country===currentCorrect.name) b.classList.add('reveal'); });
     setTimeout(nextQuestion,1400);
@@ -533,6 +549,16 @@ function endGame() {
     : score>=6  ? ['👍','Mitte paha','Veel natuke harjutust ja oled meister!']
     :             ['😅','Tubli pingutus','Harjuta edasi — sa jõuad sinna!'];
   el('result-emoji').textContent=r[0]; el('result-title').textContent=r[1]; el('result-sub').textContent=r[2];
+  const rGrid=el('revision-grid'); rGrid.innerHTML='';
+  if(mistakesSet.size) {
+    el('revision-section').style.display='block';
+    [...mistakesSet].forEach(name=>{
+      const c=COUNTRIES.find(x=>x.name===name); if(!c) return;
+      const item=document.createElement('div'); item.className='revision-item';
+      item.innerHTML=`<img src="${flagUrl(c.code,160)}" class="revision-flag" alt="${t(c.name)}"><div class="revision-name">${t(c.name)}</div>`;
+      rGrid.appendChild(item);
+    });
+  } else { el('revision-section').style.display='none'; }
 }
 showHome();
 </script>
