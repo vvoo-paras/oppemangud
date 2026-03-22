@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaardiots</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css"/>
+<style>
+  :root {
+    --green:#4ade80;--red:#f87171;--blue:#60a5fa;--gold:#fbbf24;
+    --accent:#a78bfa;--accent-dim:rgba(167,139,250,0.12);
+    --glass:rgba(255,255,255,0.07);--glass-b:rgba(255,255,255,0.13);
+    --glass-h:rgba(255,255,255,0.12);--text:#f1f5f9;
+    --muted:rgba(241,245,249,0.5);--r:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Papyrus,fantasy}
+  button{touch-action:manipulation}
+  body{
+    color:var(--text);min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;padding:24px 16px 48px;background:#04071a;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:url('https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1600&q=80') center/cover no-repeat;
+    opacity:.35;z-index:0;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse at 50% 0%,rgba(50,20,100,.5) 0%,transparent 70%),
+      radial-gradient(ellipse at 80% 100%,rgba(20,10,60,.6) 0%,transparent 60%),
+      linear-gradient(to bottom,rgba(4,7,26,.3),rgba(4,7,26,.75));
+    z-index:0;
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:520px;transition:max-width .4s}
+  .wrap.game-active{max-width:980px}
+  .glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(20px)}
+
+  /* ── HOME ── */
+  #home{display:flex;flex-direction:column;gap:14px}
+  .home-hero{padding:40px 32px 34px;text-align:center}
+  .home-hero h1{
+    font-size:2.6rem;font-weight:400;letter-spacing:-.5px;line-height:1.1;margin-bottom:12px;
+    background:linear-gradient(135deg,#fff 40%,#a78bfa);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .home-hero p{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:340px;margin:0 auto}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mode-card{
+    padding:20px 16px;text-align:center;cursor:pointer;
+    border:1px solid var(--glass-b);border-radius:var(--r);
+    background:var(--glass);backdrop-filter:blur(20px);
+    transition:background .2s,border-color .2s,transform .15s;user-select:none;
+  }
+  @media(hover:hover){.mode-card:hover{background:var(--glass-h);transform:translateY(-2px)}}
+  .mode-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+  .mode-icon{font-size:2rem;margin-bottom:8px;display:block}
+  .mode-title{font-size:.95rem;font-weight:700;margin-bottom:3px}
+  .mode-desc{font-size:.78rem;color:var(--muted);line-height:1.35}
+  .btn-start{
+    background:var(--accent);color:#fff;border:none;border-radius:var(--r);
+    padding:16px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-start:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-start:active{transform:translateY(1px)}
+  .hs-row{padding:13px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem}
+  .hs-row .hs-label{color:var(--muted)}
+  .hs-row .hs-val{font-weight:700;color:var(--gold)}
+
+  /* ── REGION ── */
+  .region-wrap{padding:14px 18px 16px}
+  .region-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .region-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .region-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .region-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  @media(hover:hover){.region-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
+  /* ── GAME ── */
+  #game{display:none;flex-direction:column;gap:12px}
+  .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
+  .hud-score{font-size:.9rem;font-weight:500;white-space:nowrap;color:var(--muted)}
+  .hud-score span{color:var(--text);font-size:1.15rem;font-weight:700}
+  .timer-wrap{display:flex;align-items:center;gap:10px;flex:1}
+  .timer-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+  .timer-bar{height:100%;background:var(--green);border-radius:99px;transition:width 1s linear,background .5s}
+  .timer-text{font-size:.9rem;font-weight:700;min-width:24px;text-align:right;color:var(--muted)}
+  .streak-badge{
+    background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+    color:var(--gold);font-size:.72rem;font-weight:700;
+    padding:4px 10px;border-radius:99px;display:none;white-space:nowrap;
+  }
+  .streak-badge.show{display:block}
+  .btn-stop{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;width:28px;height:28px;font-size:.7rem;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  @media(hover:hover){.btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}}
+  .mode-toggle{
+    display:flex;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;padding:4px;gap:4px;backdrop-filter:blur(20px);
+  }
+  .mode-pill{
+    flex:1;text-align:center;padding:7px 12px;border-radius:99px;
+    font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);
+    border:none;background:transparent;transition:background .2s,color .2s;
+  }
+  .mode-pill.active{background:var(--accent);color:#fff}
+
+  /* ── QUESTION BAR ── */
+  .q-bar{
+    padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    min-height:72px;
+  }
+  .q-bar-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap;flex-shrink:0}
+  .q-flag{height:38px;width:auto;max-width:70px;border-radius:5px;border:1px solid rgba(255,255,255,.12);display:none;flex-shrink:0}
+  .q-name{font-size:1.7rem;font-weight:400;line-height:1.15;flex:1}
+  .q-feedback{
+    font-size:.85rem;font-weight:700;padding:4px 14px;border-radius:99px;
+    opacity:0;transition:opacity .15s;white-space:nowrap;flex-shrink:0;
+  }
+  .q-feedback.ok {opacity:1;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+  .q-feedback.err{opacity:1;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+
+  /* ── MAP ── */
+  #map-wrap{
+    width:100%;height:60vh;min-height:340px;
+    border-radius:var(--r);overflow:hidden;
+    border:1px solid var(--glass-b);background:#04071a;
+    position:relative;
+  }
+  #map{width:100%;height:100%}
+  /* Override jsvectormap chrome */
+  .jvectormap-container{background:#04071a !important}
+  .jvectormap-zoomin,.jvectormap-zoomout{
+    background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;
+    color:var(--text)!important;border-radius:7px!important;
+    font-size:1.1rem!important;line-height:1.4!important;width:26px!important;
+  }
+  .jvectormap-tip{
+    background:rgba(15,15,40,.92)!important;border:1px solid var(--glass-b)!important;
+    color:var(--text)!important;border-radius:8px!important;
+    font-family:Papyrus,fantasy!important;font-size:.82rem!important;padding:5px 10px!important;
+  }
+
+  /* ── RESULT ── */
+  #result{display:none;flex-direction:column;gap:14px}
+  .result-card{padding:40px 32px;text-align:center}
+  .result-emoji{font-size:3.5rem;margin-bottom:10px;display:block}
+  .result-title{font-size:2rem;font-weight:400;margin-bottom:6px}
+  .result-sub{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+  .result-score-big{font-size:4.5rem;font-weight:700;color:var(--accent);line-height:1;letter-spacing:-2px}
+  .result-score-label{font-size:.75rem;color:var(--muted);margin:4px 0 28px;text-transform:uppercase;letter-spacing:1px}
+  .new-best{
+    display:inline-block;margin-bottom:16px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.28);
+    color:var(--gold);font-size:.78rem;font-weight:700;padding:5px 14px;border-radius:99px;
+  }
+  .result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+  .stat-box{background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:12px;padding:14px 10px}
+  .stat-num{font-size:1.5rem;font-weight:700}
+  .stat-lbl{font-size:.72rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+  .result-btns{display:flex;flex-direction:column;gap:10px}
+  .btn-again{
+    background:var(--accent);color:#fff;border:none;border-radius:var(--r);
+    padding:15px;font-size:1rem;font-weight:700;cursor:pointer;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-again:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-home{
+    background:transparent;color:var(--muted);border:1px solid var(--glass-b);
+    border-radius:var(--r);padding:13px;font-size:.9rem;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  @media(hover:hover){.btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}}
+
+  /* ── REVISION ── */
+  .revision-card{padding:20px 22px}
+  .revision-title{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .revision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+  .revision-item{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.22);border-radius:12px;padding:10px 8px;text-align:center}
+  .revision-flag{width:100%;height:auto;border-radius:5px;display:block;margin-bottom:7px;border:1px solid rgba(255,255,255,.08)}
+  .revision-name{font-size:.75rem;font-weight:700;color:var(--text);line-height:1.2}
+
+  @keyframes fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fade-up .28s ease forwards}
+
+  @media(max-width:620px){
+    .wrap.game-active{max-width:520px}
+    .home-hero h1{font-size:2rem}
+    .home-hero{padding:28px 20px 22px}
+    .result-card{padding:28px 20px}
+    #map-wrap{height:52vh;min-height:280px}
+    .hud{padding:10px 12px;gap:8px}
+    .mode-pill{font-size:.72rem;padding:6px 8px}
+    .q-name{font-size:1.3rem}
+  }
+  @media(max-width:380px){
+    .home-hero h1{font-size:1.7rem}
+    .result-score-big{font-size:3.5rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── HOME ── -->
+  <div id="home">
+    <div class="glass home-hero">
+      <h1>Kaardiots</h1>
+      <p id="hero-desc">Aega on 60 sekundit. Leia riik kaardilt — klõpsa õigele kohale!</p>
+    </div>
+    <div class="glass region-wrap">
+      <div class="region-label">Piirkond</div>
+      <div class="region-pills">
+        <button class="region-pill active" data-region="europe"   onclick="selectRegion('europe')">🌍 Euroopa</button>
+        <button class="region-pill"        data-region="americas" onclick="selectRegion('americas')">🌎 Ameerika</button>
+        <button class="region-pill"        data-region="asia"     onclick="selectRegion('asia')">🌏 Aasia</button>
+        <button class="region-pill"        data-region="africa"   onclick="selectRegion('africa')">🌍 Aafrika</button>
+        <button class="region-pill"        data-region="oceania"  onclick="selectRegion('oceania')">🌊 Okeaania</button>
+        <button class="region-pill"        data-region="world"    onclick="selectRegion('world')">🌐 Kogu maailm</button>
+      </div>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card selected" data-mode="name-to-map" onclick="selectMode('name-to-map')">
+        <span class="mode-icon">🗺️</span>
+        <div class="mode-title">Riik → Kaart</div>
+        <div class="mode-desc">Näidatakse riigi nime — klõpsa kaardil</div>
+      </div>
+      <div class="mode-card" data-mode="flag-to-map" onclick="selectMode('flag-to-map')">
+        <span class="mode-icon">🏳️</span>
+        <div class="mode-title">Lipp → Kaart</div>
+        <div class="mode-desc">Näidatakse lippu — klõpsa kaardil</div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Alusta →</button>
+    <div class="glass hs-row" id="hs-row" style="display:none">
+      <span class="hs-label">🏆 Isiklik rekord</span>
+      <span class="hs-val" id="hs-display">—</span>
+    </div>
+    <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div id="game">
+    <div class="glass hud">
+      <div class="hud-score">Skoor <span id="score-display">0</span></div>
+      <div class="streak-badge" id="streak-badge">🔥 <span id="streak-num">0</span> järjest</div>
+      <div class="timer-wrap">
+        <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar"></div></div>
+        <div class="timer-text" id="timer-text">60</div>
+      </div>
+      <button class="btn-stop" onclick="endGame()" title="Lõpeta mäng">✕</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-pill active" id="pill-name-to-map" onclick="switchMode('name-to-map')">🗺️ Riik → Kaart</button>
+      <button class="mode-pill"        id="pill-flag-to-map" onclick="switchMode('flag-to-map')">🏳️ Lipp → Kaart</button>
+    </div>
+    <div class="glass q-bar">
+      <span class="q-bar-label">Leia:</span>
+      <img id="q-flag" class="q-flag" alt=""/>
+      <span id="q-name" class="q-name">—</span>
+      <span id="q-feedback" class="q-feedback"></span>
+    </div>
+    <div id="map-wrap">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- ── RESULT ── -->
+  <div id="result">
+    <div class="glass result-card">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-title" id="result-title">Aeg läbi!</div>
+      <div class="result-sub" id="result-sub">Siin on sinu tulemus</div>
+      <div id="new-best-badge" style="display:none"><span class="new-best">✨ Uus isiklik rekord</span></div>
+      <div class="result-score-big" id="result-score">0</div>
+      <div class="result-score-label">õiget vastust</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-num" id="stat-correct" style="color:var(--green)">0</div><div class="stat-lbl">Õige</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-wrong"   style="color:var(--red)">0</div><div class="stat-lbl">Vale</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-best"    style="color:var(--gold)">0</div><div class="stat-lbl">Rekord</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-acc"     style="color:var(--accent)">0%</div><div class="stat-lbl">Täpsus</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-again" onclick="startGame()">Mängi uuesti →</button>
+        <button class="btn-home"  onclick="showHome()">Muuda mängulaadi</button>
+        <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="revision-section" style="display:none" class="glass revision-card">
+    <div class="revision-title">🔁 Nendega eksisid</div>
+    <div id="revision-grid" class="revision-grid"></div>
+  </div>
+
+</div><!-- .wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const REGIONS = {
+  europe: {
+    label:'Euroopa',
+    focus:{ regions:['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','SM','RS','SK','SI','ES','SE','CH','UA','GB'] },
+    countries:[
+      {name:'Albania',       code:'al',et:'Albaania'},
+      {name:'Andorra',       code:'ad',et:'Andorra'},
+      {name:'Austria',       code:'at',et:'Austria'},
+      {name:'Belarus',       code:'by',et:'Valgevene'},
+      {name:'Belgium',       code:'be',et:'Belgia'},
+      {name:'Bosnia & Herzegovina',code:'ba',et:'Bosnia ja Hertsegoviina'},
+      {name:'Bulgaria',      code:'bg',et:'Bulgaaria'},
+      {name:'Croatia',       code:'hr',et:'Horvaatia'},
+      {name:'Cyprus',        code:'cy',et:'Küpros'},
+      {name:'Czech Republic',code:'cz',et:'Tšehhi'},
+      {name:'Denmark',       code:'dk',et:'Taani'},
+      {name:'Estonia',       code:'ee',et:'Eesti'},
+      {name:'Finland',       code:'fi',et:'Soome'},
+      {name:'France',        code:'fr',et:'Prantsusmaa'},
+      {name:'Germany',       code:'de',et:'Saksamaa'},
+      {name:'Greece',        code:'gr',et:'Kreeka'},
+      {name:'Hungary',       code:'hu',et:'Ungari'},
+      {name:'Iceland',       code:'is',et:'Island'},
+      {name:'Ireland',       code:'ie',et:'Iirimaa'},
+      {name:'Italy',         code:'it',et:'Itaalia'},
+      {name:'Kosovo',        code:'xk',et:'Kosovo'},
+      {name:'Latvia',        code:'lv',et:'Läti'},
+      {name:'Liechtenstein', code:'li',et:'Liechtenstein'},
+      {name:'Lithuania',     code:'lt',et:'Leedu'},
+      {name:'Luxembourg',    code:'lu',et:'Luksemburg'},
+      {name:'Malta',         code:'mt',et:'Malta'},
+      {name:'Moldova',       code:'md',et:'Moldova'},
+      {name:'Monaco',        code:'mc',et:'Monaco'},
+      {name:'Montenegro',    code:'me',et:'Montenegro'},
+      {name:'Netherlands',   code:'nl',et:'Madalmaad'},
+      {name:'North Macedonia',code:'mk',et:'Põhja-Makedoonia'},
+      {name:'Norway',        code:'no',et:'Norra'},
+      {name:'Poland',        code:'pl',et:'Poola'},
+      {name:'Portugal',      code:'pt',et:'Portugal'},
+      {name:'Romania',       code:'ro',et:'Rumeenia'},
+      {name:'San Marino',    code:'sm',et:'San Marino'},
+      {name:'Serbia',        code:'rs',et:'Serbia'},
+      {name:'Slovakia',      code:'sk',et:'Slovakkia'},
+      {name:'Slovenia',      code:'si',et:'Sloveenia'},
+      {name:'Spain',         code:'es',et:'Hispaania'},
+      {name:'Sweden',        code:'se',et:'Rootsi'},
+      {name:'Switzerland',   code:'ch',et:'Šveits'},
+      {name:'Ukraine',       code:'ua',et:'Ukraina'},
+      {name:'United Kingdom',code:'gb',et:'Ühendkuningriik'},
+    ]
+  },
+  americas: {
+    label:'Ameerika',
+    focus:{ regions:['US','CA','MX','BR','AR','CO','CL','PE','VE','EC','BO','PY','UY','CU','JM','HT','DO','GT','HN','SV','NI','CR','PA','TT','GY'] },
+    countries:[
+      {name:'United States',       code:'us',et:'Ameerika Ühendriigid'},
+      {name:'Canada',              code:'ca',et:'Kanada'},
+      {name:'Mexico',              code:'mx',et:'Mehhiko'},
+      {name:'Brazil',              code:'br',et:'Brasiilia'},
+      {name:'Argentina',           code:'ar',et:'Argentina'},
+      {name:'Colombia',            code:'co',et:'Colombia'},
+      {name:'Chile',               code:'cl',et:'Tšiili'},
+      {name:'Peru',                code:'pe',et:'Peruu'},
+      {name:'Venezuela',           code:'ve',et:'Venezuela'},
+      {name:'Ecuador',             code:'ec',et:'Ecuador'},
+      {name:'Bolivia',             code:'bo',et:'Boliivia'},
+      {name:'Paraguay',            code:'py',et:'Paraguay'},
+      {name:'Uruguay',             code:'uy',et:'Uruguay'},
+      {name:'Cuba',                code:'cu',et:'Kuuba'},
+      {name:'Jamaica',             code:'jm',et:'Jamaica'},
+      {name:'Haiti',               code:'ht',et:'Haiti'},
+      {name:'Dominican Republic',  code:'do',et:'Dominikaani Vabariik'},
+      {name:'Guatemala',           code:'gt',et:'Guatemala'},
+      {name:'Honduras',            code:'hn',et:'Honduras'},
+      {name:'El Salvador',         code:'sv',et:'El Salvador'},
+      {name:'Nicaragua',           code:'ni',et:'Nicaragua'},
+      {name:'Costa Rica',          code:'cr',et:'Costa Rica'},
+      {name:'Panama',              code:'pa',et:'Panama'},
+      {name:'Trinidad and Tobago', code:'tt',et:'Trinidad ja Tobago'},
+      {name:'Guyana',              code:'gy',et:'Guyana'},
+    ]
+  },
+  asia: {
+    label:'Aasia',
+    focus:{ regions:['CN','JP','KR','IN','PK','BD','AF','IR','IQ','SA','AE','TR','IL','JO','LB','SY','YE','OM','KW','QA','ID','MY','PH','VN','TH','MM','KH','SG','MN','KZ','NP','LK','GE','AM','AZ'] },
+    countries:[
+      {name:'China',                   code:'cn',et:'Hiina'},
+      {name:'Japan',                   code:'jp',et:'Jaapan'},
+      {name:'South Korea',             code:'kr',et:'Lõuna-Korea'},
+      {name:'India',                   code:'in',et:'India'},
+      {name:'Pakistan',                code:'pk',et:'Pakistan'},
+      {name:'Bangladesh',              code:'bd',et:'Bangladesh'},
+      {name:'Afghanistan',             code:'af',et:'Afganistan'},
+      {name:'Iran',                    code:'ir',et:'Iraan'},
+      {name:'Iraq',                    code:'iq',et:'Iraak'},
+      {name:'Saudi Arabia',            code:'sa',et:'Saudi Araabia'},
+      {name:'United Arab Emirates',    code:'ae',et:'Araabia Ühendemiraadid'},
+      {name:'Turkey',                  code:'tr',et:'Türgi'},
+      {name:'Israel',                  code:'il',et:'Iisrael'},
+      {name:'Jordan',                  code:'jo',et:'Jordaania'},
+      {name:'Lebanon',                 code:'lb',et:'Liibanon'},
+      {name:'Syria',                   code:'sy',et:'Süüria'},
+      {name:'Yemen',                   code:'ye',et:'Jeemen'},
+      {name:'Oman',                    code:'om',et:'Omaan'},
+      {name:'Kuwait',                  code:'kw',et:'Kuveit'},
+      {name:'Qatar',                   code:'qa',et:'Katar'},
+      {name:'Indonesia',               code:'id',et:'Indoneesia'},
+      {name:'Malaysia',                code:'my',et:'Malaisia'},
+      {name:'Philippines',             code:'ph',et:'Filipiinid'},
+      {name:'Vietnam',                 code:'vn',et:'Vietnam'},
+      {name:'Thailand',                code:'th',et:'Tai'},
+      {name:'Myanmar',                 code:'mm',et:'Myanmar'},
+      {name:'Cambodia',                code:'kh',et:'Kambodža'},
+      {name:'Singapore',               code:'sg',et:'Singapur'},
+      {name:'Mongolia',                code:'mn',et:'Mongoolia'},
+      {name:'Kazakhstan',              code:'kz',et:'Kasahstan'},
+      {name:'Nepal',                   code:'np',et:'Nepal'},
+      {name:'Sri Lanka',               code:'lk',et:'Sri Lanka'},
+      {name:'Georgia',                 code:'ge',et:'Gruusia'},
+      {name:'Armenia',                 code:'am',et:'Armeenia'},
+      {name:'Azerbaijan',              code:'az',et:'Aserbaidžaan'},
+    ]
+  },
+  africa: {
+    label:'Aafrika',
+    focus:{ regions:['EG','MA','DZ','TN','LY','SD','ET','KE','TZ','UG','RW','SO','NG','GH','CI','SN','ML','NE','TD','CM','CD','AO','MZ','MG','ZA','ZW','ZM','NA','BW','MU','LR','SL','TG','BJ','BF'] },
+    countries:[
+      {name:'Egypt',         code:'eg',et:'Egiptus'},
+      {name:'Morocco',       code:'ma',et:'Maroko'},
+      {name:'Algeria',       code:'dz',et:'Alžeeria'},
+      {name:'Tunisia',       code:'tn',et:'Tuneesia'},
+      {name:'Libya',         code:'ly',et:'Liibüa'},
+      {name:'Sudan',         code:'sd',et:'Sudaan'},
+      {name:'Ethiopia',      code:'et',et:'Etioopia'},
+      {name:'Kenya',         code:'ke',et:'Kenya'},
+      {name:'Tanzania',      code:'tz',et:'Tansaania'},
+      {name:'Uganda',        code:'ug',et:'Uganda'},
+      {name:'Rwanda',        code:'rw',et:'Rwanda'},
+      {name:'Somalia',       code:'so',et:'Somaalia'},
+      {name:'Nigeria',       code:'ng',et:'Nigeeria'},
+      {name:'Ghana',         code:'gh',et:'Ghana'},
+      {name:'Ivory Coast',   code:'ci',et:'Elevandiluurannik'},
+      {name:'Senegal',       code:'sn',et:'Senegal'},
+      {name:'Mali',          code:'ml',et:'Mali'},
+      {name:'Niger',         code:'ne',et:'Niger'},
+      {name:'Chad',          code:'td',et:'Tšaad'},
+      {name:'Cameroon',      code:'cm',et:'Kamerun'},
+      {name:'DR Congo',      code:'cd',et:'Kongo DV'},
+      {name:'Angola',        code:'ao',et:'Angola'},
+      {name:'Mozambique',    code:'mz',et:'Mosambiik'},
+      {name:'Madagascar',    code:'mg',et:'Madagaskar'},
+      {name:'South Africa',  code:'za',et:'Lõuna-Aafrika Vabariik'},
+      {name:'Zimbabwe',      code:'zw',et:'Zimbabwe'},
+      {name:'Zambia',        code:'zm',et:'Sambia'},
+      {name:'Namibia',       code:'na',et:'Namiibia'},
+      {name:'Botswana',      code:'bw',et:'Botswana'},
+      {name:'Mauritius',     code:'mu',et:'Mauritius'},
+      {name:'Liberia',       code:'lr',et:'Libeeria'},
+      {name:'Sierra Leone',  code:'sl',et:'Sierra Leone'},
+      {name:'Togo',          code:'tg',et:'Togo'},
+      {name:'Benin',         code:'bj',et:'Benin'},
+      {name:'Burkina Faso',  code:'bf',et:'Burkina Faso'},
+    ]
+  },
+  oceania: {
+    label:'Okeaania',
+    focus:{ regions:['AU','NZ','PG','FJ','SB','VU','WS','TO','KI','NR'] },
+    countries:[
+      {name:'Australia',       code:'au',et:'Austraalia'},
+      {name:'New Zealand',     code:'nz',et:'Uus-Meremaa'},
+      {name:'Papua New Guinea',code:'pg',et:'Paapua Uus-Guinea'},
+      {name:'Fiji',            code:'fj',et:'Fidži'},
+      {name:'Solomon Islands', code:'sb',et:'Saalomoni Saared'},
+      {name:'Vanuatu',         code:'vu',et:'Vanuatu'},
+      {name:'Samoa',           code:'ws',et:'Samoa'},
+      {name:'Tonga',           code:'to',et:'Tonga'},
+      {name:'Kiribati',        code:'ki',et:'Kiribati'},
+      {name:'Nauru',           code:'nr',et:'Nauru'},
+    ]
+  },
+};
+REGIONS.world = {
+  label:'Kogu maailm',
+  focus:null,
+  countries: Object.values(REGIONS).flatMap(r => r.countries)
+};
+
+const flagUrl = (code,w=160) => `https://flagcdn.com/w${w}/${code}.png`;
+const el = id => document.getElementById(id);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let selectedRegion = 'europe';
+let mode = 'name-to-map';
+let score=0, wrong=0, streak=0;
+let timeLeft=60, timer=null, answered=false, currentCorrect=null;
+let masteredSet=new Set(), pool=[], mistakesSet=new Set();
+let mapInstance = null;
+
+// ── MAP HELPERS ────────────────────────────────────────────────────────────
+function regionEl(code) {
+  // jsvectormap stores regions internally; fall back to querying SVG paths
+  const r = mapInstance && mapInstance._regions && mapInstance._regions[code.toUpperCase()];
+  return r ? r.element : null;
+}
+
+function setFill(code, fill, opacity) {
+  const e = regionEl(code);
+  if (!e) return;
+  e.style.fill = fill;
+  e.style.fillOpacity = opacity != null ? opacity : '1';
+  e.style.transition = 'fill .2s, fill-opacity .2s';
+}
+
+function resetFills() {
+  if (!mapInstance || !mapInstance._regions) return;
+  Object.values(mapInstance._regions).forEach(r => {
+    r.element.style.fill = '';
+    r.element.style.fillOpacity = '';
+    r.element.style.transition = '';
+  });
+}
+
+function isInMap(code) {
+  return !!(mapInstance && mapInstance._regions && mapInstance._regions[code.toUpperCase()]);
+}
+
+function initMap() {
+  if (mapInstance) return;
+  mapInstance = new jsVectorMap({
+    selector: '#map',
+    map: 'world',
+    backgroundColor: 'transparent',
+    zoomOnScroll: true,
+    zoomButtons: true,
+    showTooltip: true,
+    regionStyle: {
+      initial: {
+        fill: 'rgba(255,255,255,0.07)',
+        stroke: 'rgba(255,255,255,0.2)',
+        strokeWidth: 0.5,
+        fillOpacity: 1,
+      },
+      hover: { fill:'rgba(167,139,250,0.25)', cursor:'pointer' },
+    },
+    regionLabelStyle: { initial:{ fontFamily:'Papyrus,fantasy', fill:'#fff', fontSize:8 } },
+    onRegionClick: (_e, code) => handleMapClick(code.toLowerCase()),
+    onRegionTooltipShow: (_e, tooltip, code) => {
+      // Show Estonian name if available
+      const allC = REGIONS.world.countries;
+      const found = allC.find(c => c.code === code.toLowerCase());
+      tooltip.text(found ? found.et : tooltip.text());
+    },
+  });
+}
+
+function focusRegion() {
+  if (!mapInstance) return;
+  const f = REGIONS[selectedRegion].focus;
+  if (!f) {
+    // world: reset to full world view
+    try { mapInstance.setFocus({ scale:1, animate:false }); } catch(_){}
+    return;
+  }
+  try { mapInstance.setFocus({ ...f, animate:false }); } catch(_){}
+}
+
+// ── REGION / MODE ──────────────────────────────────────────────────────────
+function selectRegion(r) {
+  selectedRegion = r;
+  document.querySelectorAll('.region-pill').forEach(p => p.classList.toggle('active', p.dataset.region===r));
+  const hs = +localStorage.getItem('kq_hs_'+r)||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else   { el('hs-row').style.display='none'; }
+}
+
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('selected', c.dataset.mode===m));
+}
+
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id===`pill-${m}`));
+  if (currentCorrect) showQuestion(currentCorrect);
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function showHome() {
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('home').style.display='flex'; el('game').style.display='none';
+  el('result').style.display='none'; el('revision-section').style.display='none';
+  const hs = +localStorage.getItem('kq_hs_'+selectedRegion)||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else   { el('hs-row').style.display='none'; }
+}
+
+function startGame() {
+  score=0; wrong=0; streak=0; timeLeft=60; answered=false;
+  masteredSet.clear(); pool=[]; mistakesSet.clear();
+
+  document.querySelector('.wrap').classList.add('game-active');
+  el('home').style.display='none'; el('result').style.display='none';
+  el('game').style.display='flex';
+  el('score-display').textContent='0';
+  el('streak-badge').classList.remove('show');
+  document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id===`pill-${mode}`));
+
+  // Init map (first time) then focus, then start
+  setTimeout(() => {
+    if (!mapInstance) initMap();
+    // After map is ready, filter playable countries (only those present in SVG)
+    setTimeout(() => {
+      focusRegion();
+      resetFills();
+      updateTimer();
+      clearInterval(timer); timer = setInterval(tick, 1000);
+      nextQuestion();
+    }, 120);
+  }, 60);
+}
+
+// ── GAME LOOP ──────────────────────────────────────────────────────────────
+function getPlayable() {
+  const pool = REGIONS[selectedRegion].countries;
+  // Filter to countries that actually exist in the map
+  return pool.filter(c => isInMap(c.code));
+}
+
+function buildPool() {
+  const playable = getPlayable();
+  pool = shuffle(playable.filter(c => !masteredSet.has(c.name)));
+  if (!pool.length) { masteredSet.clear(); pool = shuffle([...playable]); }
+}
+
+function nextQuestion() {
+  answered = false;
+  resetFills();
+  hideFeedback();
+  if (!pool.length) buildPool();
+  if (!pool.length) { endGame(); return; } // no playable countries
+  currentCorrect = pool.shift();
+  showQuestion(currentCorrect);
+}
+
+function showQuestion(c) {
+  if (mode === 'name-to-map') {
+    el('q-name').textContent = c.et;
+    el('q-flag').style.display = 'none';
+  } else {
+    el('q-name').textContent = '';
+    el('q-flag').src = flagUrl(c.code);
+    el('q-flag').style.display = 'block';
+  }
+}
+
+function handleMapClick(code) {
+  if (answered || !currentCorrect) return;
+  if (!code) return; // ocean click
+
+  answered = true;
+
+  if (code === currentCorrect.code) {
+    // ✓ Correct
+    setFill(code, '#4ade80', 0.55);
+    masteredSet.add(currentCorrect.name);
+    el('score-display').textContent = ++score;
+    if (++streak >= 3) { el('streak-badge').classList.add('show'); el('streak-num').textContent = streak; }
+    showFeedback(true, currentCorrect.et);
+    setTimeout(nextQuestion, 700);
+  } else {
+    // ✗ Wrong
+    setFill(code, '#f87171', 0.5);
+    setFill(currentCorrect.code, '#4ade80', 0.55);
+    wrong++; streak = 0;
+    mistakesSet.add(currentCorrect.name);
+    el('streak-badge').classList.remove('show');
+    showFeedback(false, currentCorrect.et);
+    setTimeout(nextQuestion, 1200);
+  }
+}
+
+function showFeedback(ok, name) {
+  const fb = el('q-feedback');
+  fb.textContent = ok ? `✓ ${name}` : `✗ ${name}`;
+  fb.className = 'q-feedback ' + (ok ? 'ok' : 'err');
+}
+function hideFeedback() {
+  const fb = el('q-feedback');
+  fb.textContent = ''; fb.className = 'q-feedback';
+}
+
+function tick() { if (--timeLeft <= 0) endGame(); else updateTimer(); }
+function updateTimer() {
+  el('timer-bar').style.width = (timeLeft/60*100)+'%';
+  el('timer-bar').style.background = timeLeft>20?'var(--green)':timeLeft>10?'var(--gold)':'var(--red)';
+  el('timer-text').textContent = timeLeft;
+}
+
+// ── END ────────────────────────────────────────────────────────────────────
+function endGame() {
+  clearInterval(timer);
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('game').style.display='none'; el('result').style.display='flex';
+
+  const acc = score+wrong > 0 ? Math.round(score/(score+wrong)*100) : 0;
+  const hs  = +localStorage.getItem('kq_hs_'+selectedRegion)||0;
+  const newBest = score > hs;
+  if (newBest) localStorage.setItem('kq_hs_'+selectedRegion, score);
+
+  el('result-score').textContent = el('stat-correct').textContent = score;
+  el('stat-wrong').textContent  = wrong;
+  el('stat-best').textContent   = newBest ? score : hs;
+  el('stat-acc').textContent    = acc+'%';
+  el('new-best-badge').style.display = newBest && score ? 'block' : 'none';
+
+  const [emoji,title,sub] =
+    score === 0  ? ['😬','Raske voor','Proovi uuesti — sa üllatad ennast!'] :
+    score >= 20  ? ['🏆','Kaardimeister','Vapustav — sa tunned kaarti tõesti!'] :
+    score >= 12  ? ['🌟','Suurepärane!','Oled kaardil navigeerimise teel!'] :
+    score >= 6   ? ['👍','Tubli!','Hea algus — proovi uuesti!'] :
+                   ['🙂','Hea katse','Harjuta ja tule tagasi!'];
+  el('result-emoji').textContent = emoji;
+  el('result-title').textContent = title;
+  el('result-sub').textContent   = sub;
+
+  // Revision panel
+  const revGrid = el('revision-grid');
+  revGrid.innerHTML = '';
+  if (mistakesSet.size) {
+    el('revision-section').style.display = 'block';
+    const all = REGIONS.world.countries;
+    mistakesSet.forEach(name => {
+      const c = all.find(x => x.name === name); if (!c) return;
+      const item = document.createElement('div'); item.className = 'revision-item';
+      const img  = new Image(); img.src = flagUrl(c.code); img.alt = c.et; img.className = 'revision-flag';
+      const nm   = document.createElement('div'); nm.className = 'revision-name'; nm.textContent = c.et;
+      item.append(img, nm); revGrid.appendChild(item);
+    });
+  } else {
+    el('revision-section').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
