@@ -508,8 +508,7 @@ let mapInstance = null;
 
 // ── MAP HELPERS ────────────────────────────────────────────────────────────
 function regionEl(code) {
-  // jsvectormap stores regions internally; fall back to querying SVG paths
-  const r = mapInstance && mapInstance._regions && mapInstance._regions[code.toUpperCase()];
+  const r = mapInstance && mapInstance.regions && mapInstance.regions[code.toUpperCase()];
   return r ? r.element : null;
 }
 
@@ -522,8 +521,8 @@ function setFill(code, fill, opacity) {
 }
 
 function resetFills() {
-  if (!mapInstance || !mapInstance._regions) return;
-  Object.values(mapInstance._regions).forEach(r => {
+  if (!mapInstance || !mapInstance.regions) return;
+  Object.values(mapInstance.regions).forEach(r => {
     r.element.style.fill = '';
     r.element.style.fillOpacity = '';
     r.element.style.transition = '';
@@ -531,7 +530,7 @@ function resetFills() {
 }
 
 function isInMap(code) {
-  return !!(mapInstance && mapInstance._regions && mapInstance._regions[code.toUpperCase()]);
+  return !!(mapInstance && mapInstance.regions && mapInstance.regions[code.toUpperCase()]);
 }
 
 function initMap() {
