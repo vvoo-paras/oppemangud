@@ -507,25 +507,28 @@ let masteredSet=new Set(), pool=[], mistakesSet=new Set();
 let mapInstance = null;
 
 // ── MAP HELPERS ────────────────────────────────────────────────────────────
-function regionEl(code) {
+// r.element is a Region class; r.element.shape.node is the actual SVG <path> DOM element
+function regionNode(code) {
   const r = mapInstance && mapInstance.regions && mapInstance.regions[code.toUpperCase()];
-  return r ? r.element : null;
+  return (r && r.element && r.element.shape && r.element.shape.node) ? r.element.shape.node : null;
 }
 
 function setFill(code, fill, opacity) {
-  const e = regionEl(code);
-  if (!e) return;
-  e.style.fill = fill;
-  e.style.fillOpacity = opacity != null ? opacity : '1';
-  e.style.transition = 'fill .2s, fill-opacity .2s';
+  const node = regionNode(code);
+  if (!node) return;
+  node.style.fill = fill;
+  node.style.fillOpacity = opacity != null ? String(opacity) : '1';
+  node.style.transition = 'fill .2s';
 }
 
 function resetFills() {
   if (!mapInstance || !mapInstance.regions) return;
   Object.values(mapInstance.regions).forEach(r => {
-    r.element.style.fill = '';
-    r.element.style.fillOpacity = '';
-    r.element.style.transition = '';
+    const node = r.element && r.element.shape && r.element.shape.node;
+    if (!node) return;
+    node.style.fill = '';
+    node.style.fillOpacity = '';
+    node.style.transition = '';
   });
 }
 
