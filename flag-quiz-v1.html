@@ -522,13 +522,13 @@ function pick(btn, chosen) {
     masteredSet.add(currentCorrect.name);
     el('score-display').textContent=++score;
     if(++streak>=3) { el('streak-badge').classList.add('show'); el('streak-num').textContent=streak; }
-    setTimeout(nextQuestion,850);
+    setTimeout(nextQuestion,250);
   } else {
     btn.classList.add('wrong','shake'); wrong++; streak=0;
     mistakesSet.add(currentCorrect.name);
     el('streak-badge').classList.remove('show');
     document.querySelectorAll('.opt-btn').forEach(b=>{ if(b.dataset.country===currentCorrect.name) b.classList.add('reveal'); });
-    setTimeout(nextQuestion,1400);
+    setTimeout(nextQuestion,500);
   }
 }
 function endGame() {
