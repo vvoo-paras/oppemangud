@@ -67,6 +67,18 @@
   .hs-row .hs-label{color:var(--muted)}
   .hs-row .hs-val{font-weight:700;color:var(--gold)}
 
+  /* REGION SELECTOR */
+  .region-wrap{padding:14px 18px 16px}
+  .region-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .region-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .region-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .region-pill.active{background:rgba(96,165,250,.15);border-color:var(--blue);color:var(--blue)}
+  @media(hover:hover){.region-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
   /* GAME */
   #game{display:none;flex-direction:column;gap:14px}
   .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
@@ -190,7 +202,18 @@
   <div id="home">
     <div class="glass home-hero">
       <h1>Lipumäng</h1>
-      <p>Aega on 60 sekundit. 44 riiki.<br>Mitu lippu saad pihta?</p>
+      <p id="hero-desc">Aega on 60 sekundit. 44 riiki. Mitu lippu saad pihta?</p>
+    </div>
+    <div class="glass region-wrap">
+      <div class="region-label">Piirkond</div>
+      <div class="region-pills">
+        <button class="region-pill active" data-region="europe"   onclick="selectRegion('europe')">🌍 Euroopa</button>
+        <button class="region-pill"        data-region="americas" onclick="selectRegion('americas')">🌎 Ameerika</button>
+        <button class="region-pill"        data-region="asia"     onclick="selectRegion('asia')">🌏 Aasia</button>
+        <button class="region-pill"        data-region="africa"   onclick="selectRegion('africa')">🌍 Aafrika</button>
+        <button class="region-pill"        data-region="oceania"  onclick="selectRegion('oceania')">🌊 Okeaania</button>
+        <button class="region-pill"        data-region="world"    onclick="selectRegion('world')">🌐 Maailm</button>
+      </div>
     </div>
     <div class="mode-grid">
       <div class="mode-card selected" data-mode="flag-to-name" onclick="selectMode('flag-to-name')">
@@ -255,6 +278,7 @@
 </div>
 <script>
 const ET = {
+  // Europe
   "Albania":"Albaania","Andorra":"Andorra","Austria":"Austria",
   "Belarus":"Valgevene","Belgium":"Belgia","Bosnia & Herzegovina":"Bosnia ja Hertsegoviina",
   "Bulgaria":"Bulgaaria","Croatia":"Horvaatia","Cyprus":"Küpros",
@@ -269,35 +293,136 @@ const ET = {
   "Portugal":"Portugal","Romania":"Rumeenia","San Marino":"San Marino",
   "Serbia":"Serbia","Slovakia":"Slovakkia","Slovenia":"Sloveenia",
   "Spain":"Hispaania","Sweden":"Rootsi","Switzerland":"Šveits",
-  "Ukraine":"Ukraina","United Kingdom":"Ühendkuningriik"
+  "Ukraine":"Ukraina","United Kingdom":"Ühendkuningriik",
+  // Americas
+  "United States":"Ameerika Ühendriigid","Canada":"Kanada","Mexico":"Mehhiko",
+  "Brazil":"Brasiilia","Argentina":"Argentina","Colombia":"Colombia",
+  "Chile":"Tšiili","Peru":"Peruu","Venezuela":"Venezuela","Ecuador":"Ecuador",
+  "Bolivia":"Boliivia","Paraguay":"Paraguay","Uruguay":"Uruguay","Cuba":"Kuuba",
+  "Jamaica":"Jamaica","Haiti":"Haiti","Dominican Republic":"Dominikaani Vabariik",
+  "Guatemala":"Guatemala","Honduras":"Honduras","El Salvador":"El Salvador",
+  "Nicaragua":"Nicaragua","Costa Rica":"Costa Rica","Panama":"Panama",
+  "Trinidad and Tobago":"Trinidad ja Tobago","Guyana":"Guyana",
+  // Asia
+  "China":"Hiina","Japan":"Jaapan","South Korea":"Lõuna-Korea","India":"India",
+  "Pakistan":"Pakistan","Bangladesh":"Bangladesh","Afghanistan":"Afganistan",
+  "Iran":"Iraan","Iraq":"Iraak","Saudi Arabia":"Saudi Araabia",
+  "United Arab Emirates":"Araabia Ühendemiraadid","Turkey":"Türgi",
+  "Israel":"Iisrael","Jordan":"Jordaania","Lebanon":"Liibanon",
+  "Syria":"Süüria","Yemen":"Jeemen","Oman":"Omaan","Kuwait":"Kuveit",
+  "Qatar":"Katar","Indonesia":"Indoneesia","Malaysia":"Malaisia",
+  "Philippines":"Filipiinid","Vietnam":"Vietnam","Thailand":"Tai",
+  "Myanmar":"Myanmar","Cambodia":"Kambodža","Singapore":"Singapur",
+  "Mongolia":"Mongoolia","Kazakhstan":"Kasahstan","Nepal":"Nepal",
+  "Sri Lanka":"Sri Lanka","Georgia":"Gruusia","Armenia":"Armeenia",
+  "Azerbaijan":"Aserbaidžaan",
+  // Africa
+  "Egypt":"Egiptus","Morocco":"Maroko","Algeria":"Alžeeria",
+  "Tunisia":"Tuneesia","Libya":"Liibüa","Sudan":"Sudaan",
+  "Ethiopia":"Etioopia","Kenya":"Kenya","Tanzania":"Tansaania",
+  "Uganda":"Uganda","Rwanda":"Rwanda","Somalia":"Somaalia",
+  "Nigeria":"Nigeeria","Ghana":"Ghana","Ivory Coast":"Elevandiluurannik",
+  "Senegal":"Senegal","Mali":"Mali","Niger":"Niger","Chad":"Tšaad",
+  "Cameroon":"Kamerun","DR Congo":"Kongo DV","Angola":"Angola",
+  "Mozambique":"Mosambiik","Madagascar":"Madagaskar",
+  "South Africa":"Lõuna-Aafrika Vabariik","Zimbabwe":"Zimbabwe",
+  "Zambia":"Sambia","Namibia":"Namiibia","Botswana":"Botswana",
+  "Mauritius":"Mauritius","Liberia":"Libeeria","Sierra Leone":"Sierra Leone",
+  "Togo":"Togo","Benin":"Benin","Burkina Faso":"Burkina Faso",
+  // Oceania
+  "Australia":"Austraalia","New Zealand":"Uus-Meremaa",
+  "Papua New Guinea":"Paapua Uus-Guinea","Fiji":"Fidži",
+  "Solomon Islands":"Saalomoni Saared","Vanuatu":"Vanuatu",
+  "Samoa":"Samoa","Tonga":"Tonga","Kiribati":"Kiribati","Nauru":"Nauru"
 };
-const COUNTRIES = [
-  {name:"Albania",code:"al"},{name:"Andorra",code:"ad"},{name:"Austria",code:"at"},
-  {name:"Belarus",code:"by"},{name:"Belgium",code:"be"},{name:"Bosnia & Herzegovina",code:"ba"},
-  {name:"Bulgaria",code:"bg"},{name:"Croatia",code:"hr"},{name:"Cyprus",code:"cy"},
-  {name:"Czech Republic",code:"cz"},{name:"Denmark",code:"dk"},{name:"Estonia",code:"ee"},
-  {name:"Finland",code:"fi"},{name:"France",code:"fr"},{name:"Germany",code:"de"},
-  {name:"Greece",code:"gr"},{name:"Hungary",code:"hu"},{name:"Iceland",code:"is"},
-  {name:"Ireland",code:"ie"},{name:"Italy",code:"it"},{name:"Kosovo",code:"xk"},
-  {name:"Latvia",code:"lv"},{name:"Liechtenstein",code:"li"},{name:"Lithuania",code:"lt"},
-  {name:"Luxembourg",code:"lu"},{name:"Malta",code:"mt"},{name:"Moldova",code:"md"},
-  {name:"Monaco",code:"mc"},{name:"Montenegro",code:"me"},{name:"Netherlands",code:"nl"},
-  {name:"North Macedonia",code:"mk"},{name:"Norway",code:"no"},{name:"Poland",code:"pl"},
-  {name:"Portugal",code:"pt"},{name:"Romania",code:"ro"},{name:"San Marino",code:"sm"},
-  {name:"Serbia",code:"rs"},{name:"Slovakia",code:"sk"},{name:"Slovenia",code:"si"},
-  {name:"Spain",code:"es"},{name:"Sweden",code:"se"},{name:"Switzerland",code:"ch"},
-  {name:"Ukraine",code:"ua"},{name:"United Kingdom",code:"gb"}
-];
+
+const REGIONS = {
+  europe: { label:"Euroopa", countries:[
+    {name:"Albania",code:"al"},{name:"Andorra",code:"ad"},{name:"Austria",code:"at"},
+    {name:"Belarus",code:"by"},{name:"Belgium",code:"be"},{name:"Bosnia & Herzegovina",code:"ba"},
+    {name:"Bulgaria",code:"bg"},{name:"Croatia",code:"hr"},{name:"Cyprus",code:"cy"},
+    {name:"Czech Republic",code:"cz"},{name:"Denmark",code:"dk"},{name:"Estonia",code:"ee"},
+    {name:"Finland",code:"fi"},{name:"France",code:"fr"},{name:"Germany",code:"de"},
+    {name:"Greece",code:"gr"},{name:"Hungary",code:"hu"},{name:"Iceland",code:"is"},
+    {name:"Ireland",code:"ie"},{name:"Italy",code:"it"},{name:"Kosovo",code:"xk"},
+    {name:"Latvia",code:"lv"},{name:"Liechtenstein",code:"li"},{name:"Lithuania",code:"lt"},
+    {name:"Luxembourg",code:"lu"},{name:"Malta",code:"mt"},{name:"Moldova",code:"md"},
+    {name:"Monaco",code:"mc"},{name:"Montenegro",code:"me"},{name:"Netherlands",code:"nl"},
+    {name:"North Macedonia",code:"mk"},{name:"Norway",code:"no"},{name:"Poland",code:"pl"},
+    {name:"Portugal",code:"pt"},{name:"Romania",code:"ro"},{name:"San Marino",code:"sm"},
+    {name:"Serbia",code:"rs"},{name:"Slovakia",code:"sk"},{name:"Slovenia",code:"si"},
+    {name:"Spain",code:"es"},{name:"Sweden",code:"se"},{name:"Switzerland",code:"ch"},
+    {name:"Ukraine",code:"ua"},{name:"United Kingdom",code:"gb"}
+  ]},
+  americas: { label:"Ameerika", countries:[
+    {name:"United States",code:"us"},{name:"Canada",code:"ca"},{name:"Mexico",code:"mx"},
+    {name:"Brazil",code:"br"},{name:"Argentina",code:"ar"},{name:"Colombia",code:"co"},
+    {name:"Chile",code:"cl"},{name:"Peru",code:"pe"},{name:"Venezuela",code:"ve"},
+    {name:"Ecuador",code:"ec"},{name:"Bolivia",code:"bo"},{name:"Paraguay",code:"py"},
+    {name:"Uruguay",code:"uy"},{name:"Cuba",code:"cu"},{name:"Jamaica",code:"jm"},
+    {name:"Haiti",code:"ht"},{name:"Dominican Republic",code:"do"},
+    {name:"Guatemala",code:"gt"},{name:"Honduras",code:"hn"},{name:"El Salvador",code:"sv"},
+    {name:"Nicaragua",code:"ni"},{name:"Costa Rica",code:"cr"},{name:"Panama",code:"pa"},
+    {name:"Trinidad and Tobago",code:"tt"},{name:"Guyana",code:"gy"}
+  ]},
+  asia: { label:"Aasia", countries:[
+    {name:"China",code:"cn"},{name:"Japan",code:"jp"},{name:"South Korea",code:"kr"},
+    {name:"India",code:"in"},{name:"Pakistan",code:"pk"},{name:"Bangladesh",code:"bd"},
+    {name:"Afghanistan",code:"af"},{name:"Iran",code:"ir"},{name:"Iraq",code:"iq"},
+    {name:"Saudi Arabia",code:"sa"},{name:"United Arab Emirates",code:"ae"},
+    {name:"Turkey",code:"tr"},{name:"Israel",code:"il"},{name:"Jordan",code:"jo"},
+    {name:"Lebanon",code:"lb"},{name:"Syria",code:"sy"},{name:"Yemen",code:"ye"},
+    {name:"Oman",code:"om"},{name:"Kuwait",code:"kw"},{name:"Qatar",code:"qa"},
+    {name:"Indonesia",code:"id"},{name:"Malaysia",code:"my"},{name:"Philippines",code:"ph"},
+    {name:"Vietnam",code:"vn"},{name:"Thailand",code:"th"},{name:"Myanmar",code:"mm"},
+    {name:"Cambodia",code:"kh"},{name:"Singapore",code:"sg"},{name:"Mongolia",code:"mn"},
+    {name:"Kazakhstan",code:"kz"},{name:"Nepal",code:"np"},{name:"Sri Lanka",code:"lk"},
+    {name:"Georgia",code:"ge"},{name:"Armenia",code:"am"},{name:"Azerbaijan",code:"az"}
+  ]},
+  africa: { label:"Aafrika", countries:[
+    {name:"Egypt",code:"eg"},{name:"Morocco",code:"ma"},{name:"Algeria",code:"dz"},
+    {name:"Tunisia",code:"tn"},{name:"Libya",code:"ly"},{name:"Sudan",code:"sd"},
+    {name:"Ethiopia",code:"et"},{name:"Kenya",code:"ke"},{name:"Tanzania",code:"tz"},
+    {name:"Uganda",code:"ug"},{name:"Rwanda",code:"rw"},{name:"Somalia",code:"so"},
+    {name:"Nigeria",code:"ng"},{name:"Ghana",code:"gh"},{name:"Ivory Coast",code:"ci"},
+    {name:"Senegal",code:"sn"},{name:"Mali",code:"ml"},{name:"Niger",code:"ne"},
+    {name:"Chad",code:"td"},{name:"Cameroon",code:"cm"},{name:"DR Congo",code:"cd"},
+    {name:"Angola",code:"ao"},{name:"Mozambique",code:"mz"},{name:"Madagascar",code:"mg"},
+    {name:"South Africa",code:"za"},{name:"Zimbabwe",code:"zw"},{name:"Zambia",code:"zm"},
+    {name:"Namibia",code:"na"},{name:"Botswana",code:"bw"},{name:"Mauritius",code:"mu"},
+    {name:"Liberia",code:"lr"},{name:"Sierra Leone",code:"sl"},{name:"Togo",code:"tg"},
+    {name:"Benin",code:"bj"},{name:"Burkina Faso",code:"bf"}
+  ]},
+  oceania: { label:"Okeaania", countries:[
+    {name:"Australia",code:"au"},{name:"New Zealand",code:"nz"},
+    {name:"Papua New Guinea",code:"pg"},{name:"Fiji",code:"fj"},
+    {name:"Solomon Islands",code:"sb"},{name:"Vanuatu",code:"vu"},
+    {name:"Samoa",code:"ws"},{name:"Tonga",code:"to"},
+    {name:"Kiribati",code:"ki"},{name:"Nauru",code:"nr"}
+  ]},
+};
+REGIONS.world = { label:"Maailm", countries: Object.values(REGIONS).flatMap(r => r.countries) };
 
 const t = name => ET[name] || name;
 const flagUrl = (code, w=320) => `https://flagcdn.com/w${w}/${code}.png`;
 const el = id => document.getElementById(id);
 const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
 
+let selectedRegion = 'europe';
+let COUNTRIES = REGIONS[selectedRegion].countries;
 let mode='flag-to-name', score=0, wrong=0, streak=0;
 let timeLeft=60, timer=null, answered=false, currentCorrect=null;
 let masteredSet=new Set(), pool=[];
 
+function selectRegion(r) {
+  selectedRegion = r;
+  COUNTRIES = REGIONS[r].countries;
+  document.querySelectorAll('.region-pill').forEach(p => p.classList.toggle('active', p.dataset.region===r));
+  el('hero-desc').textContent = `Aega on 60 sekundit. ${COUNTRIES.length} riiki. Mitu lippu saad pihta?`;
+  const hs = +localStorage.getItem('fq_hs_'+r)||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else { el('hs-row').style.display='none'; }
+}
 function buildPool() {
   pool = shuffle(COUNTRIES.filter(c => !masteredSet.has(c.name)));
   if(!pool.length) { masteredSet.clear(); pool = shuffle([...COUNTRIES]); }
@@ -315,10 +440,12 @@ function switchMode(m) {
 function showHome() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
-  const hs = +localStorage.getItem('fq_hs')||0;
+  const hs = +localStorage.getItem('fq_hs_'+selectedRegion)||0;
   if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else { el('hs-row').style.display='none'; }
 }
 function startGame() {
+  COUNTRIES = REGIONS[selectedRegion].countries;
   score=0; wrong=0; streak=0; timeLeft=60; answered=false;
   masteredSet.clear(); pool=[];
   document.querySelector('.wrap').classList.add('game-active');
@@ -393,8 +520,8 @@ function endGame() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('game').style.display='none'; el('result').style.display='flex';
   const acc=score+wrong>0?Math.round(score/(score+wrong)*100):0;
-  const hs=+localStorage.getItem('fq_hs')||0;
-  const newBest=score>hs; if(newBest) localStorage.setItem('fq_hs',score);
+  const hs=+localStorage.getItem('fq_hs_'+selectedRegion)||0;
+  const newBest=score>hs; if(newBest) localStorage.setItem('fq_hs_'+selectedRegion,score);
   el('result-score').textContent=el('stat-correct').textContent=score;
   el('stat-wrong').textContent=wrong;
   el('stat-best').textContent=newBest?score:hs;
