@@ -273,29 +273,29 @@
 </div>
 <script>
 const BIRDS = [
-  { et:"Rasvatihane",    latin:"Parus major",              img:"Parus_major_Mallorca_1.jpg" },
-  { et:"Sinitihane",     latin:"Cyanistes caeruleus",      img:"Blue_tit_ct.jpg" },
-  { et:"Punarind",       latin:"Erithacus rubecula",       img:"Erithacus_rubecula_with_cocked_head.jpg" },
-  { et:"Metsvint",       latin:"Fringilla coelebs",        img:"Chaffinch_male_edit2.jpg" },
-  { et:"Musträstas",     latin:"Turdus merula",            img:"Turdus_merula_male_2.jpg" },
-  { et:"Linavästrik",    latin:"Motacilla alba",           img:"Motacilla_alba_alba_male_2.jpg" },
-  { et:"Suitsupääsuke",  latin:"Hirundo rustica",          img:"Barn_Swallow_(Hirundo_rustica)_-_male.jpg" },
-  { et:"Kuldnokk",       latin:"Sturnus vulgaris",         img:"Common_starling_(Sturnus_vulgaris).jpg" },
-  { et:"Harakas",        latin:"Pica pica",                img:"Pica_pica_pica_-_British_Bird.jpg" },
-  { et:"Hallvares",      latin:"Corvus cornix",            img:"Corvus_cornix_cornix.jpg" },
-  { et:"Hakk",           latin:"Corvus monedula",          img:"Western_Jackdaw_-_Corvus_monedula.jpg" },
-  { et:"Koduvarblane",   latin:"Passer domesticus",        img:"Male_house_sparrow_in_CP_(cropped2).jpg" },
-  { et:"Sookurg",        latin:"Grus grus",                img:"Grus_grus_2_(Marek_Szczepanek).jpg" },
-  { et:"Merikotkas",     latin:"Haliaeetus albicilla",     img:"White-tailed_Eagle_Haliaeetus_albicilla.jpg" },
-  { et:"Kägu",           latin:"Cuculus canorus",          img:"Cuculus_canorus_vogelartinfo.jpg" },
-  { et:"Suur-kirjurähn", latin:"Dendrocopos major",        img:"Dendrocopos_major_-_Great_Spotted_Woodpecker_XL.jpg" },
-  { et:"Leevike",        latin:"Pyrrhula pyrrhula",        img:"Pyrrhula_pyrrhula_male_2.jpg" },
-  { et:"Rohevint",       latin:"Chloris chloris",          img:"Chloris_chloris_male_2.jpg" },
-  { et:"Talvike",        latin:"Plectrophenax nivalis",    img:"Snow_bunting_(Plectrophenax_nivalis).jpg" },
-  { et:"Õõnetuvi",       latin:"Columba oenas",            img:"Stock_dove_(Columba_oenas).jpg" },
+  { et:"Rasvatihane",    latin:"Parus major",           img:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Great_tit_%28Parus_major%29%2C_Parc_du_Rouge-Cloitre%2C_For%C3%AAt_de_Soignes%2C_Brussels_%2826194636951%29.jpg/400px-Great_tit_%28Parus_major%29%2C_Parc_du_Rouge-Cloitre%2C_For%C3%AAt_de_Soignes%2C_Brussels_%2826194636951%29.jpg" },
+  { et:"Sinitihane",     latin:"Cyanistes caeruleus",   img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Eurasian_blue_tit_Lancashire.jpg/400px-Eurasian_blue_tit_Lancashire.jpg" },
+  { et:"Punarind",       latin:"Erithacus rubecula",    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Erithacus_rubecula_with_cocked_head.jpg/400px-Erithacus_rubecula_with_cocked_head.jpg" },
+  { et:"Metsvint",       latin:"Fringilla coelebs",     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Male_Chaffinch_-_Fringilla_coelebs.jpg/400px-Male_Chaffinch_-_Fringilla_coelebs.jpg" },
+  { et:"Musträstas",     latin:"Turdus merula",         img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Common_Blackbird.jpg/400px-Common_Blackbird.jpg" },
+  { et:"Linavästrik",    latin:"Motacilla alba",        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/20180415_015_Winterswijk_Witte_kwikstaart_%2840785272624%29.jpg/400px-20180415_015_Winterswijk_Witte_kwikstaart_%2840785272624%29.jpg" },
+  { et:"Suitsupääsuke",  latin:"Hirundo rustica",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Rauchschwalbe_Hirundo_rustica.jpg/400px-Rauchschwalbe_Hirundo_rustica.jpg" },
+  { et:"Kuldnokk",       latin:"Sturnus vulgaris",      img:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Toulouse_-_Sturnus_vulgaris_-_2012-02-26_-_3.jpg/400px-Toulouse_-_Sturnus_vulgaris_-_2012-02-26_-_3.jpg" },
+  { et:"Harakas",        latin:"Pica pica",             img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Eurasian_magpie_%2810860%29.jpg/400px-Eurasian_magpie_%2810860%29.jpg" },
+  { et:"Hallvares",      latin:"Corvus cornix",         img:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Corvus_cornix_Hooded_Crow_Croatia_1076.jpg/400px-Corvus_cornix_Hooded_Crow_Croatia_1076.jpg" },
+  { et:"Hakk",           latin:"Corvus monedula",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/%D0%93%D0%B0%D0%BB%D0%BA%D0%B0_%28Corvus_monedula%29%2C_%D0%A6%D0%B0%D1%80%D0%B8%D1%86%D1%8B%D0%BD%D0%BE.jpg/400px-%D0%93%D0%B0%D0%BB%D0%BA%D0%B0_%28Corvus_monedula%29%2C_%D0%A6%D0%B0%D1%80%D0%B8%D1%86%D1%8B%D0%BD%D0%BE.jpg" },
+  { et:"Koduvarblane",   latin:"Passer domesticus",     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/House_sparrow_male_in_Prospect_Park_%2853532%29.jpg/400px-House_sparrow_male_in_Prospect_Park_%2853532%29.jpg" },
+  { et:"Sookurg",        latin:"Grus grus",             img:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Common_crane_grus_grus.jpg/400px-Common_crane_grus_grus.jpg" },
+  { et:"Merikotkas",     latin:"Haliaeetus albicilla",  img:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/NZ7_5265_%2852812350718%29.jpg/400px-NZ7_5265_%2852812350718%29.jpg" },
+  { et:"Kägu",           latin:"Cuculus canorus",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Cuckoo_%2851169010335%29.jpg/400px-Cuckoo_%2851169010335%29.jpg" },
+  { et:"Suur-kirjurähn", latin:"Dendrocopos major",     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Greater_Spotted_Woodpecker_%2841554059345%29.jpg/400px-Greater_Spotted_Woodpecker_%2841554059345%29.jpg" },
+  { et:"Leevike",        latin:"Pyrrhula pyrrhula",     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Bullfinch_male.jpg/400px-Bullfinch_male.jpg" },
+  { et:"Rohevint",       latin:"Chloris chloris",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Chloris_chloris_%28profile%29.jpg/400px-Chloris_chloris_%28profile%29.jpg" },
+  { et:"Talvike",        latin:"Plectrophenax nivalis", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Snow_Bunting_%28Plectrophenax_nivalis%29%2C_Thule%2C_Greenland_1.jpg/400px-Snow_Bunting_%28Plectrophenax_nivalis%29%2C_Thule%2C_Greenland_1.jpg" },
+  { et:"Õõnetuvi",       latin:"Columba oenas",         img:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Pigeon_colombin_%28Colulmba_oenas%29%2C_Parc_de_Woluwe%2C_Bruxelles_%2851921513878%29.jpg/400px-Pigeon_colombin_%28Colulmba_oenas%29%2C_Parc_de_Woluwe%2C_Bruxelles_%2851921513878%29.jpg" },
 ];
 
-const birdImg = b => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(b.img)}?width=500`;
+const birdImg = b => b.img;
 
 const el = id => document.getElementById(id);
 const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
