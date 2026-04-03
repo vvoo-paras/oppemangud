@@ -67,6 +67,18 @@
   .hs-row .hs-label{color:var(--muted)}
   .hs-row .hs-val{font-weight:700;color:var(--gold)}
 
+  /* DURATION SELECTOR */
+  .duration-wrap{padding:14px 18px 16px}
+  .duration-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .duration-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .duration-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .duration-pill.active{background:rgba(74,222,128,.15);border-color:var(--green);color:var(--green)}
+  @media(hover:hover){.duration-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
   /* GAME */
   #game{display:none;flex-direction:column;gap:14px}
   .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
@@ -216,7 +228,17 @@
   <div id="home">
     <div class="glass home-hero">
       <h1>Linnumäng</h1>
-      <p>Aega on 60 sekundit. 20 Eesti lindu.<br>Mitu lindu suudad tuvastada?</p>
+      <p id="hero-desc">Aega on 60 sekundit. 20 Eesti lindu.<br>Mitu lindu suudad tuvastada?</p>
+    </div>
+    <div class="glass duration-wrap">
+      <div class="duration-label">Mängu kestus</div>
+      <div class="duration-pills">
+        <button class="duration-pill"        data-dur="30"        onclick="selectDuration(30)">⏱ 30 sek</button>
+        <button class="duration-pill active"  data-dur="60"        onclick="selectDuration(60)">⏱ 60 sek</button>
+        <button class="duration-pill"         data-dur="120"       onclick="selectDuration(120)">⏱ 2 min</button>
+        <button class="duration-pill"         data-dur="300"       onclick="selectDuration(300)">⏱ 5 min</button>
+        <button class="duration-pill"         data-dur="unlimited" onclick="selectDuration('unlimited')">♾ Lõputu</button>
+      </div>
     </div>
     <div class="mode-grid">
       <div class="mode-card selected" data-mode="photo-to-name" onclick="selectMode('photo-to-name')">
@@ -327,13 +349,38 @@ function makeBirdImg(bird, cls, ph) {
   return img;
 }
 
-let mode='photo-to-name', score=0, wrong=0, streak=0;
+let mode='photo-to-name', selectedDuration=60;
+let score=0, wrong=0, streak=0;
 let timeLeft=60, timer=null, answered=false, currentCorrect=null;
 let masteredSet=new Set(), pool=[], mistakesSet=new Set();
 
+function selectDuration(d) {
+  selectedDuration = d;
+  document.querySelectorAll('.duration-pill').forEach(p => p.classList.toggle('active', p.dataset.dur===String(d)));
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+function updateHeroSubtitle() {
+  const p = el('hero-desc');
+  if (selectedDuration==='unlimited') {
+    p.innerHTML = 'Lõputu mäng. Tutvu kõigi 20 linnuga!';
+  } else if (selectedDuration>=60) {
+    const m=selectedDuration/60;
+    p.innerHTML = `Aega on ${m} minut${m>1?'it':''}. 20 Eesti lindu.<br>Mitu lindu suudad tuvastada?`;
+  } else {
+    p.innerHTML = `Aega on ${selectedDuration} sekundit. 20 Eesti lindu.<br>Mitu lindu suudad tuvastada?`;
+  }
+}
+function refreshHsDisplay() {
+  const hs = +localStorage.getItem('bq_hs_'+selectedDuration)||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else { el('hs-row').style.display='none'; }
+}
+function formatTime(s) { return s>=60?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):String(s); }
+
 function buildPool() {
   pool = shuffle(BIRDS.filter(b => !masteredSet.has(b.et)));
-  if(!pool.length) { masteredSet.clear(); pool = shuffle([...BIRDS]); }
+  if(!pool.length && selectedDuration!=='unlimited') { masteredSet.clear(); pool = shuffle([...BIRDS]); }
 }
 function selectMode(m) {
   mode = m;
@@ -349,11 +396,11 @@ function showHome() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
   el('revision-section').style.display='none';
-  const hs = +localStorage.getItem('bq_hs')||0;
-  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  refreshHsDisplay();
 }
 function startGame() {
-  score=0; wrong=0; streak=0; timeLeft=60; answered=false;
+  score=0; wrong=0; streak=0; answered=false;
+  timeLeft = selectedDuration==='unlimited' ? 0 : selectedDuration;
   masteredSet.clear(); pool=[]; mistakesSet.clear();
   document.querySelector('.wrap').classList.add('game-active');
   el('home').style.display='none'; el('result').style.display='none'; el('game').style.display='flex';
@@ -361,18 +408,29 @@ function startGame() {
   el('streak-badge').classList.remove('show');
   document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id===`pill-${mode}`));
   updateTimer();
-  clearInterval(timer); timer=setInterval(tick,1000);
+  clearInterval(timer);
+  if(selectedDuration!=='unlimited') timer=setInterval(tick,1000);
   nextQuestion();
 }
 function tick() { if(--timeLeft<=0) endGame(); else updateTimer(); }
 function updateTimer() {
-  el('timer-bar').style.width=(timeLeft/60*100)+'%';
-  el('timer-bar').style.background=timeLeft>20?'var(--green)':timeLeft>10?'var(--gold)':'var(--red)';
-  el('timer-text').textContent=timeLeft;
+  if(selectedDuration==='unlimited') {
+    const pct=BIRDS.length>0?masteredSet.size/BIRDS.length*100:0;
+    el('timer-bar').style.width=pct+'%';
+    el('timer-bar').style.background='var(--green)';
+    el('timer-text').textContent=masteredSet.size+'/'+BIRDS.length;
+  } else {
+    el('timer-bar').style.width=(timeLeft/selectedDuration*100)+'%';
+    const f=timeLeft/selectedDuration;
+    el('timer-bar').style.background=f>0.33?'var(--green)':f>0.17?'var(--gold)':'var(--red)';
+    el('timer-text').textContent=formatTime(timeLeft);
+  }
 }
 function nextQuestion() {
   answered=false;
+  if(selectedDuration==='unlimited' && masteredSet.size===BIRDS.length) { endGame(); return; }
   if(!pool.length) buildPool();
+  if(!pool.length) { endGame(); return; }
   currentCorrect=pool.shift();
   const opts=shuffle([currentCorrect,...shuffle(BIRDS.filter(b=>b.et!==currentCorrect.et)).slice(0,2)]);
 
@@ -414,6 +472,7 @@ function pick(btn, chosen) {
     masteredSet.add(currentCorrect.et);
     el('score-display').textContent=++score;
     if(++streak>=3) { el('streak-badge').classList.add('show'); el('streak-num').textContent=streak; }
+    if(selectedDuration==='unlimited') updateTimer();
     setTimeout(nextQuestion,250);
   } else {
     btn.classList.add('wrong','shake'); wrong++; streak=0;
@@ -428,8 +487,8 @@ function endGame() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('game').style.display='none'; el('result').style.display='flex';
   const acc=score+wrong>0?Math.round(score/(score+wrong)*100):0;
-  const hs=+localStorage.getItem('bq_hs')||0;
-  const newBest=score>hs; if(newBest) localStorage.setItem('bq_hs',score);
+  const hs=+localStorage.getItem('bq_hs_'+selectedDuration)||0;
+  const newBest=score>hs; if(newBest) localStorage.setItem('bq_hs_'+selectedDuration,score);
   el('result-score').textContent=el('stat-correct').textContent=score;
   el('stat-wrong').textContent=wrong;
   el('stat-best').textContent=newBest?score:hs;

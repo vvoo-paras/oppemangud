@@ -79,6 +79,18 @@
   .region-pill.active{background:rgba(96,165,250,.15);border-color:var(--blue);color:var(--blue)}
   @media(hover:hover){.region-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
 
+  /* DURATION SELECTOR */
+  .duration-wrap{padding:14px 18px 16px}
+  .duration-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .duration-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .duration-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .duration-pill.active{background:rgba(96,165,250,.15);border-color:var(--blue);color:var(--blue)}
+  @media(hover:hover){.duration-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
   /* GAME */
   #game{display:none;flex-direction:column;gap:14px}
   .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
@@ -223,6 +235,16 @@
         <button class="region-pill"        data-region="africa"   onclick="selectRegion('africa')">🌍 Aafrika</button>
         <button class="region-pill"        data-region="oceania"  onclick="selectRegion('oceania')">🌊 Okeaania</button>
         <button class="region-pill"        data-region="world"    onclick="selectRegion('world')">🌐 Kogu maailm</button>
+      </div>
+    </div>
+    <div class="glass duration-wrap">
+      <div class="duration-label">Mängu kestus</div>
+      <div class="duration-pills">
+        <button class="duration-pill"        data-dur="30"        onclick="selectDuration(30)">⏱ 30 sek</button>
+        <button class="duration-pill active"  data-dur="60"        onclick="selectDuration(60)">⏱ 60 sek</button>
+        <button class="duration-pill"         data-dur="120"       onclick="selectDuration(120)">⏱ 2 min</button>
+        <button class="duration-pill"         data-dur="300"       onclick="selectDuration(300)">⏱ 5 min</button>
+        <button class="duration-pill"         data-dur="unlimited" onclick="selectDuration('unlimited')">♾ Lõputu</button>
       </div>
     </div>
     <div class="mode-grid">
@@ -425,22 +447,44 @@ const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floo
 
 let selectedRegion = 'europe';
 let COUNTRIES = REGIONS[selectedRegion].countries;
-let mode='flag-to-name', score=0, wrong=0, streak=0;
+let mode='flag-to-name', selectedDuration=60;
+let score=0, wrong=0, streak=0;
 let timeLeft=60, timer=null, answered=false, currentCorrect=null;
 let masteredSet=new Set(), pool=[], mistakesSet=new Set();
+
+function selectDuration(d) {
+  selectedDuration = d;
+  document.querySelectorAll('.duration-pill').forEach(p => p.classList.toggle('active', p.dataset.dur===String(d)));
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+function updateHeroSubtitle() {
+  if(selectedDuration==='unlimited') {
+    el('hero-desc').textContent = `Lõputu mäng. ${COUNTRIES.length} riiki. Leia kõik!`;
+  } else if(selectedDuration>=60) {
+    const m=selectedDuration/60;
+    el('hero-desc').textContent = `Aega on ${m} minut${m>1?'it':''}. ${COUNTRIES.length} riiki. Mitu lippu saad pihta?`;
+  } else {
+    el('hero-desc').textContent = `Aega on ${selectedDuration} sekundit. ${COUNTRIES.length} riiki. Mitu lippu saad pihta?`;
+  }
+}
+function refreshHsDisplay() {
+  const hs = +localStorage.getItem('fq_hs_'+selectedRegion+'_'+selectedDuration)||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else { el('hs-row').style.display='none'; }
+}
+function formatTime(s) { return s>=60?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):String(s); }
 
 function selectRegion(r) {
   selectedRegion = r;
   COUNTRIES = REGIONS[r].countries;
   document.querySelectorAll('.region-pill').forEach(p => p.classList.toggle('active', p.dataset.region===r));
-  el('hero-desc').textContent = `Aega on 60 sekundit. ${COUNTRIES.length} riiki. Mitu lippu saad pihta?`;
-  const hs = +localStorage.getItem('fq_hs_'+r)||0;
-  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
-  else { el('hs-row').style.display='none'; }
+  updateHeroSubtitle();
+  refreshHsDisplay();
 }
 function buildPool() {
   pool = shuffle(COUNTRIES.filter(c => !masteredSet.has(c.name)));
-  if(!pool.length) { masteredSet.clear(); pool = shuffle([...COUNTRIES]); }
+  if(!pool.length && selectedDuration!=='unlimited') { masteredSet.clear(); pool = shuffle([...COUNTRIES]); }
 }
 function selectMode(m) {
   mode = m;
@@ -456,13 +500,12 @@ function showHome() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
   el('revision-section').style.display='none';
-  const hs = +localStorage.getItem('fq_hs_'+selectedRegion)||0;
-  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
-  else { el('hs-row').style.display='none'; }
+  refreshHsDisplay();
 }
 function startGame() {
   COUNTRIES = REGIONS[selectedRegion].countries;
-  score=0; wrong=0; streak=0; timeLeft=60; answered=false;
+  score=0; wrong=0; streak=0; answered=false;
+  timeLeft = selectedDuration==='unlimited' ? 0 : selectedDuration;
   masteredSet.clear(); pool=[]; mistakesSet.clear();
   document.querySelector('.wrap').classList.add('game-active');
   el('home').style.display='none'; el('result').style.display='none'; el('game').style.display='flex';
@@ -470,18 +513,29 @@ function startGame() {
   el('streak-badge').classList.remove('show');
   el(`pill-${mode}`).classList.add('active');
   updateTimer();
-  clearInterval(timer); timer=setInterval(tick,1000);
+  clearInterval(timer);
+  if(selectedDuration!=='unlimited') timer=setInterval(tick,1000);
   nextQuestion();
 }
 function tick() { if(--timeLeft<=0) endGame(); else updateTimer(); }
 function updateTimer() {
-  el('timer-bar').style.width=(timeLeft/60*100)+'%';
-  el('timer-bar').style.background=timeLeft>20?'var(--green)':timeLeft>10?'var(--gold)':'var(--red)';
-  el('timer-text').textContent=timeLeft;
+  if(selectedDuration==='unlimited') {
+    const pct=COUNTRIES.length>0?masteredSet.size/COUNTRIES.length*100:0;
+    el('timer-bar').style.width=pct+'%';
+    el('timer-bar').style.background='var(--blue)';
+    el('timer-text').textContent=masteredSet.size+'/'+COUNTRIES.length;
+  } else {
+    el('timer-bar').style.width=(timeLeft/selectedDuration*100)+'%';
+    const f=timeLeft/selectedDuration;
+    el('timer-bar').style.background=f>0.33?'var(--green)':f>0.17?'var(--gold)':'var(--red)';
+    el('timer-text').textContent=formatTime(timeLeft);
+  }
 }
 function nextQuestion() {
   answered=false;
+  if(selectedDuration==='unlimited' && masteredSet.size===COUNTRIES.length) { endGame(); return; }
   if(!pool.length) buildPool();
+  if(!pool.length) { endGame(); return; }
   currentCorrect=pool.shift();
   const opts=shuffle([currentCorrect,...shuffle(COUNTRIES.filter(c=>c.name!==currentCorrect.name)).slice(0,2)]);
 
@@ -523,6 +577,7 @@ function pick(btn, chosen) {
     masteredSet.add(currentCorrect.name);
     el('score-display').textContent=++score;
     if(++streak>=3) { el('streak-badge').classList.add('show'); el('streak-num').textContent=streak; }
+    if(selectedDuration==='unlimited') updateTimer();
     setTimeout(nextQuestion,250);
   } else {
     btn.classList.add('wrong','shake'); wrong++; streak=0;
@@ -537,8 +592,9 @@ function endGame() {
   document.querySelector('.wrap').classList.remove('game-active');
   el('game').style.display='none'; el('result').style.display='flex';
   const acc=score+wrong>0?Math.round(score/(score+wrong)*100):0;
-  const hs=+localStorage.getItem('fq_hs_'+selectedRegion)||0;
-  const newBest=score>hs; if(newBest) localStorage.setItem('fq_hs_'+selectedRegion,score);
+  const hsKey='fq_hs_'+selectedRegion+'_'+selectedDuration;
+  const hs=+localStorage.getItem(hsKey)||0;
+  const newBest=score>hs; if(newBest) localStorage.setItem(hsKey,score);
   el('result-score').textContent=el('stat-correct').textContent=score;
   el('stat-wrong').textContent=wrong;
   el('stat-best').textContent=newBest?score:hs;
