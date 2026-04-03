@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loomamäng</title>
+<style>
+  :root {
+    --accent:#f87171; --green:#4ade80; --red:#f87171; --blue:#60a5fa; --gold:#fbbf24;
+    --glass:rgba(255,255,255,0.07); --glass-b:rgba(255,255,255,0.13);
+    --glass-h:rgba(255,255,255,0.12); --text:#f1f5f9;
+    --muted:rgba(241,245,249,0.5); --r:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Papyrus,fantasy}
+  button,.mode-card{touch-action:manipulation}
+  body{
+    color:var(--text);min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:24px 16px 40px;
+    background:#0d0905;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=1600&q=80') center/cover no-repeat;
+    opacity:.4;z-index:0;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse at 50% 0%,rgba(80,30,10,.5) 0%,transparent 70%),
+      radial-gradient(ellipse at 80% 100%,rgba(40,10,5,.7) 0%,transparent 60%),
+      linear-gradient(to bottom,rgba(13,9,5,.3),rgba(13,9,5,.78));
+    z-index:0;
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:520px;transition:max-width .4s}
+  .wrap.game-active{max-width:900px}
+  .glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(20px)}
+
+  /* HOME */
+  #home{display:flex;flex-direction:column;gap:14px}
+  .home-hero{padding:40px 32px 34px;text-align:center}
+  .home-hero h1{
+    font-size:2.6rem;font-weight:400;letter-spacing:-.5px;line-height:1.1;margin-bottom:12px;
+    background:linear-gradient(135deg,#fff 40%,#fca5a5);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .home-hero p{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mode-card{
+    padding:20px 16px;text-align:center;cursor:pointer;
+    border:1px solid var(--glass-b);border-radius:var(--r);
+    background:var(--glass);backdrop-filter:blur(20px);
+    transition:background .2s,border-color .2s,transform .15s;user-select:none;
+  }
+  @media(hover:hover){.mode-card:hover{background:var(--glass-h);transform:translateY(-2px)}}
+  .mode-card.selected{border-color:var(--accent);background:rgba(248,113,113,.12)}
+  .mode-icon{font-size:2rem;margin-bottom:8px;display:block}
+  .mode-title{font-size:.95rem;font-weight:700;margin-bottom:3px}
+  .mode-desc{font-size:.78rem;color:var(--muted);line-height:1.35}
+  .btn-start{
+    background:var(--accent);color:#1a0505;border:none;border-radius:var(--r);
+    padding:16px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-start:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-start:active{transform:translateY(1px)}
+  .hs-row{padding:13px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem}
+  .hs-row .hs-label{color:var(--muted)}
+  .hs-row .hs-val{font-weight:700;color:var(--gold)}
+
+  /* DURATION SELECTOR */
+  .duration-wrap{padding:14px 18px 16px}
+  .duration-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .duration-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .duration-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .duration-pill.active{background:rgba(248,113,113,.15);border-color:var(--accent);color:var(--accent)}
+  @media(hover:hover){.duration-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
+  /* GAME */
+  #game{display:none;flex-direction:column;gap:14px}
+  .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
+  .hud-score{font-size:.9rem;font-weight:500;white-space:nowrap;color:var(--muted)}
+  .hud-score span{color:var(--text);font-size:1.15rem;font-weight:700}
+  .timer-wrap{display:flex;align-items:center;gap:10px;flex:1}
+  .timer-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+  .timer-bar{height:100%;background:var(--accent);border-radius:99px;transition:width 1s linear,background .5s}
+  .timer-text{font-size:.9rem;font-weight:700;min-width:32px;text-align:right;color:var(--muted)}
+  .streak-badge{
+    background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+    color:var(--gold);font-size:.72rem;font-weight:700;
+    padding:4px 10px;border-radius:99px;display:none;white-space:nowrap;
+  }
+  .streak-badge.show{display:block}
+  .btn-stop{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;width:28px;height:28px;font-size:.7rem;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  @media(hover:hover){.btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--accent);color:var(--accent)}}
+  .mode-toggle{
+    display:flex;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;padding:4px;gap:4px;backdrop-filter:blur(20px);
+  }
+  .mode-pill{
+    flex:1;text-align:center;padding:7px 12px;border-radius:99px;
+    font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);
+    border:none;background:transparent;transition:background .2s,color .2s;
+  }
+  .mode-pill.active{background:var(--accent);color:#1a0505}
+  .game-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  .q-card{
+    padding:16px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:300px;overflow:hidden;
+  }
+  .q-animal-img{
+    width:100%;height:100%;min-height:268px;
+    object-fit:cover;border-radius:10px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+    border:1px solid rgba(255,255,255,.1);
+    display:block;
+  }
+  .q-placeholder{font-size:5rem;line-height:1}
+  .q-name{font-size:2rem;font-weight:400;line-height:1.2}
+  .q-latin{font-size:.8rem;color:var(--muted);margin-top:6px;font-style:italic}
+  .options{display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .opt-btn{
+    background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+    padding:12px 16px;font-size:1.05rem;font-weight:500;color:var(--text);
+    cursor:pointer;display:flex;align-items:center;gap:12px;
+    text-align:left;width:100%;backdrop-filter:blur(20px);
+    transition:background .15s,border-color .15s,transform .1s;
+  }
+  @media(hover:hover){.opt-btn:hover:not(:disabled){background:var(--glass-h);border-color:rgba(255,255,255,.28);transform:translateX(3px)}}
+  .opt-btn:disabled{cursor:default}
+  .opt-btn.correct{background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green)}
+  .opt-btn.wrong  {background:rgba(248,113,113,.13);border-color:var(--red);color:var(--red)}
+  .opt-btn.reveal {background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green);animation:pulse .4s ease}
+  .opt-letter{
+    width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.78rem;flex-shrink:0;color:var(--muted);
+  }
+  .opt-btn.correct .opt-letter,.opt-btn.reveal .opt-letter{background:rgba(74,222,128,.2);color:var(--green)}
+  .opt-btn.wrong .opt-letter{background:rgba(248,113,113,.2);color:var(--red)}
+  .opt-btn.animal-opt{justify-content:center;padding:6px;background:rgba(0,0,0,.25)}
+  .opt-animal-img{
+    width:100%;height:140px;object-fit:contain;
+    border-radius:8px;pointer-events:none;display:block;
+  }
+  .opt-animal-placeholder{font-size:3rem;line-height:140px}
+
+  /* RESULT */
+  #result{display:none;flex-direction:column;gap:14px}
+  .result-card{padding:40px 32px;text-align:center}
+  .result-emoji{font-size:3.5rem;margin-bottom:10px;display:block}
+  .result-title{font-size:2rem;font-weight:400;margin-bottom:6px}
+  .result-sub{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+  .result-score-big{font-size:4.5rem;font-weight:700;color:var(--accent);line-height:1;letter-spacing:-2px}
+  .result-score-label{font-size:.75rem;color:var(--muted);margin:4px 0 28px;text-transform:uppercase;letter-spacing:1px}
+  .new-best{
+    display:inline-block;margin-bottom:16px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.28);
+    color:var(--gold);font-size:.78rem;font-weight:700;padding:5px 14px;border-radius:99px;
+  }
+  .result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+  .stat-box{background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:12px;padding:14px 10px}
+  .stat-num{font-size:1.5rem;font-weight:700}
+  .stat-lbl{font-size:.72rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+  .result-btns{display:flex;flex-direction:column;gap:10px}
+  .btn-again{
+    background:var(--accent);color:#1a0505;border:none;border-radius:var(--r);
+    padding:15px;font-size:1rem;font-weight:700;cursor:pointer;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-again:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-home{
+    background:transparent;color:var(--muted);border:1px solid var(--glass-b);
+    border-radius:var(--r);padding:13px;font-size:.9rem;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  @media(hover:hover){.btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}}
+
+  /* REVISION */
+  .revision-card{padding:20px 22px}
+  .revision-title{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .revision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+  .revision-item{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.22);border-radius:12px;padding:10px 8px;text-align:center}
+  .revision-animal-img{width:100%;height:70px;object-fit:contain;border-radius:5px;display:block;margin-bottom:7px;background:rgba(0,0,0,.2)}
+  .revision-name{font-size:.75rem;font-weight:700;color:var(--text);line-height:1.2}
+  .revision-latin{font-size:.65rem;color:var(--muted);font-style:italic;margin-top:2px}
+
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .shake{animation:shake .35s ease}
+  @keyframes fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fade-up .28s ease forwards}
+
+  @media(max-width:620px){
+    .game-body{grid-template-columns:1fr}
+    .wrap.game-active{max-width:520px}
+    .home-hero h1{font-size:2rem}
+    .home-hero{padding:28px 20px 22px}
+    .result-card{padding:28px 20px}
+    .q-card{min-height:200px;padding:12px}
+    .q-animal-img{min-height:180px}
+    .hud{padding:10px 12px;gap:8px}
+    .mode-pill{font-size:.72rem;padding:6px 8px}
+    .opt-animal-img{height:100px}
+    .opt-animal-placeholder{line-height:100px}
+  }
+  @media(max-width:380px){
+    .home-hero h1{font-size:1.7rem}
+    .result-score-big{font-size:3.5rem}
+    .hud-score{font-size:.8rem}
+    .timer-text{font-size:.8rem}
+    .streak-badge{font-size:.66rem;padding:3px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="home">
+    <div class="glass home-hero">
+      <h1>Loomamäng</h1>
+      <p id="hero-desc">Aega on 60 sekundit. 20 Eesti looma.<br>Mitu suudad tuvastada?</p>
+    </div>
+    <div class="glass duration-wrap">
+      <div class="duration-label">Mängu kestus</div>
+      <div class="duration-pills">
+        <button class="duration-pill"        data-dur="30"        onclick="selectDuration(30)">⏱ 30 sek</button>
+        <button class="duration-pill active"  data-dur="60"        onclick="selectDuration(60)">⏱ 60 sek</button>
+        <button class="duration-pill"         data-dur="120"       onclick="selectDuration(120)">⏱ 2 min</button>
+        <button class="duration-pill"         data-dur="300"       onclick="selectDuration(300)">⏱ 5 min</button>
+        <button class="duration-pill"         data-dur="unlimited" onclick="selectDuration('unlimited')">♾ Lõputu</button>
+      </div>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card selected" data-mode="photo-to-name" onclick="selectMode('photo-to-name')">
+        <span class="mode-icon">🐾</span>
+        <div class="mode-title">Loom → Nimi</div>
+        <div class="mode-desc">Vaata fotot, vali nimi</div>
+      </div>
+      <div class="mode-card" data-mode="name-to-photo" onclick="selectMode('name-to-photo')">
+        <span class="mode-icon">🔍</span>
+        <div class="mode-title">Nimi → Loom</div>
+        <div class="mode-desc">Vaata nime, vali foto</div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Alusta →</button>
+    <div class="glass hs-row" id="hs-row" style="display:none">
+      <span class="hs-label" id="hs-label">🏆 Isiklik rekord</span>
+      <span class="hs-val" id="hs-display">—</span>
+    </div>
+    <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+  </div>
+
+  <div id="game">
+    <div class="glass hud">
+      <div class="hud-score">Skoor <span id="score-display">0</span></div>
+      <div class="streak-badge" id="streak-badge">🔥 <span id="streak-num">0</span> järjest</div>
+      <div class="timer-wrap">
+        <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar"></div></div>
+        <div class="timer-text" id="timer-text">60</div>
+      </div>
+      <button class="btn-stop" onclick="endGame()" title="Lõpeta mäng">✕</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-pill active" id="pill-photo-to-name" onclick="switchMode('photo-to-name')">🐾 Loom → Nimi</button>
+      <button class="mode-pill" id="pill-name-to-photo" onclick="switchMode('name-to-photo')">🔍 Nimi → Loom</button>
+    </div>
+    <div class="game-body">
+      <div class="glass q-card fade-up" id="q-card"><div id="q-visual"></div></div>
+      <div class="options" id="options"></div>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="glass result-card">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-title" id="result-title">Aeg läbi!</div>
+      <div class="result-sub" id="result-sub">Siin on sinu tulemus</div>
+      <div id="new-best-badge" style="display:none"><span class="new-best">✨ Uus isiklik rekord</span></div>
+      <div class="result-score-big" id="result-score">0</div>
+      <div class="result-score-label" id="result-score-label">õiget vastust</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-num" id="stat-correct" style="color:var(--green)">0</div><div class="stat-lbl">Õige</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-wrong" style="color:var(--red)">0</div><div class="stat-lbl">Vale</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-best" style="color:var(--gold)">0</div><div class="stat-lbl">Rekord</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-acc" style="color:var(--blue)">0%</div><div class="stat-lbl">Täpsus</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-again" onclick="startGame()">Mängi uuesti →</button>
+        <button class="btn-home" onclick="showHome()">Muuda mängulaadi</button>
+        <a href="oppemangud.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="revision-section" style="display:none" class="glass revision-card">
+    <div class="revision-title">🔁 Nendega eksisid</div>
+    <div id="revision-grid" class="revision-grid"></div>
+  </div>
+
+</div>
+<script>
+const ANIMALS = [
+  { et:"Rebane",       latin:"Vulpes vulpes",            img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Portrait_of_a_red_fox_in_Rautas_fj%C3%A4llurskog_%28cropped%29.jpg/330px-Portrait_of_a_red_fox_in_Rautas_fj%C3%A4llurskog_%28cropped%29.jpg" },
+  { et:"Ilves",        latin:"Lynx lynx",                img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Lynx_Nationalpark_Bayerischer_Wald_01.jpg/330px-Lynx_Nationalpark_Bayerischer_Wald_01.jpg" },
+  { et:"Pruunkaru",    latin:"Ursus arctos",             img:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/2010-kodiak-bear-1.jpg/330px-2010-kodiak-bear-1.jpg" },
+  { et:"Hunt",         latin:"Canis lupus",              img:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Eurasian_wolf_2.jpg/330px-Eurasian_wolf_2.jpg" },
+  { et:"Põder",        latin:"Alces alces",              img:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Alaska_moose.jpg/330px-Alaska_moose.jpg" },
+  { et:"Metssiga",     latin:"Sus scrofa",               img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Wildschwein%2C_N%C3%A4he_Pulverstampftor_%28cropped%29.jpg/330px-Wildschwein%2C_N%C3%A4he_Pulverstampftor_%28cropped%29.jpg" },
+  { et:"Metskits",     latin:"Capreolus capreolus",      img:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Roe_deer_%28Capreolus_capreolus%29_young_male_Cumnor.jpg/330px-Roe_deer_%28Capreolus_capreolus%29_young_male_Cumnor.jpg" },
+  { et:"Punahirv",     latin:"Cervus elaphus",           img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Cervus_elaphus_Luc_Viatour_6.jpg/330px-Cervus_elaphus_Luc_Viatour_6.jpg" },
+  { et:"Mäger",        latin:"Meles meles",              img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/M%C3%A4yr%C3%A4_%C3%84ht%C3%A4ri_4.jpg/330px-M%C3%A4yr%C3%A4_%C3%84ht%C3%A4ri_4.jpg" },
+  { et:"Saarmas",      latin:"Lutra lutra",              img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Fischotter%2C_Lutra_Lutra.JPG/330px-Fischotter%2C_Lutra_Lutra.JPG" },
+  { et:"Nugis",        latin:"Martes martes",            img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Pine_Marten_%2848173751702%29.jpg/330px-Pine_Marten_%2848173751702%29.jpg" },
+  { et:"Kährik",       latin:"Nyctereutes procyonoides", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Nyctereutes.png/330px-Nyctereutes.png" },
+  { et:"Kobras",       latin:"Castor fiber",             img:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Beaver_pho34.jpg/330px-Beaver_pho34.jpg" },
+  { et:"Orav",         latin:"Sciurus vulgaris",         img:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Squirrel_posing.jpg/330px-Squirrel_posing.jpg" },
+  { et:"Jänes",        latin:"Lepus europaeus",          img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Lepus_europaeus_%28Causse_M%C3%A9jean%2C_Loz%C3%A8re%29-cropped.jpg/330px-Lepus_europaeus_%28Causse_M%C3%A9jean%2C_Loz%C3%A8re%29-cropped.jpg" },
+  { et:"Siil",         latin:"Erinaceus europaeus",      img:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Erinaceus_europaeus_LC0119.jpg/330px-Erinaceus_europaeus_LC0119.jpg" },
+  { et:"Ondatra",      latin:"Ondatra zibethicus",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Muskrat_swimming_Ottawa.jpg/330px-Muskrat_swimming_Ottawa.jpg" },
+  { et:"Hallhüljes",   latin:"Halichoerus grypus",       img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Focas_grises_%28Halichoerus_grypus%29%2C_playa_de_Horsey%2C_Norfolk%2C_Inglaterra%2C_2022-11-20%2C_DD_11.jpg/330px-Focas_grises_%28Halichoerus_grypus%29%2C_playa_de_Horsey%2C_Norfolk%2C_Inglaterra%2C_2022-11-20%2C_DD_11.jpg" },
+  { et:"Viigerhüljes", latin:"Phoca vitulina",           img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Common_seal_%28Phoca_vitulina%29_2.jpg/330px-Common_seal_%28Phoca_vitulina%29_2.jpg" },
+  { et:"Naarits",      latin:"Neogale vison",            img:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/MinkforWiki.jpg/330px-MinkforWiki.jpg" },
+];
+
+const el = id => document.getElementById(id);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+
+function makeAnimalImg(animal, cls, ph) {
+  const img = new Image();
+  img.src = animal.img;
+  img.className = cls;
+  img.alt = animal.et;
+  img.onerror = () => {
+    img.style.display = 'none';
+    const span = document.createElement('span');
+    span.className = ph || 'q-placeholder';
+    span.textContent = '🐾';
+    img.parentNode && img.parentNode.insertBefore(span, img.nextSibling);
+  };
+  return img;
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let mode = 'photo-to-name';
+let selectedDuration = 60;
+let score = 0, wrong = 0, streak = 0;
+let timeLeft = 60, timer = null, answered = false, currentCorrect = null;
+let masteredSet = new Set(), pool = [], mistakesSet = new Set();
+
+// ── DURATION ──────────────────────────────────────────────────
+function selectDuration(d) {
+  selectedDuration = d;
+  document.querySelectorAll('.duration-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.dur === String(d))
+  );
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+
+function updateHeroSubtitle() {
+  const p = el('hero-desc');
+  if (selectedDuration === 'unlimited') {
+    p.textContent = 'Lõputu mäng. Tutvu kõigi 20 loomaga!';
+  } else if (selectedDuration >= 60) {
+    const mins = selectedDuration / 60;
+    p.textContent = `Aega on ${mins} minut${mins > 1 ? 'it' : ''}. 20 Eesti looma. Mitu suudad tuvastada?`;
+  } else {
+    p.textContent = `Aega on ${selectedDuration} sekundit. 20 Eesti looma. Mitu suudad tuvastada?`;
+  }
+}
+
+function hsKey() { return 'lm_hs_' + selectedDuration; }
+
+function refreshHsDisplay() {
+  const hs = +localStorage.getItem(hsKey()) || 0;
+  if (hs) {
+    el('hs-label').textContent = '🏆 Isiklik rekord';
+    el('hs-display').textContent = hs + ' õiget';
+    el('hs-row').style.display = 'flex';
+  } else {
+    el('hs-row').style.display = 'none';
+  }
+}
+
+// ── MODE ──────────────────────────────────────────────────────
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('selected', c.dataset.mode === m));
+}
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id === `pill-${m}`));
+  nextQuestion();
+}
+
+// ── HOME ──────────────────────────────────────────────────────
+function showHome() {
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('home').style.display = 'flex';
+  el('game').style.display = 'none';
+  el('result').style.display = 'none';
+  el('revision-section').style.display = 'none';
+  refreshHsDisplay();
+}
+
+// ── GAME ──────────────────────────────────────────────────────
+function startGame() {
+  score = 0; wrong = 0; streak = 0; answered = false;
+  timeLeft = selectedDuration === 'unlimited' ? 0 : selectedDuration;
+  masteredSet.clear(); pool = []; mistakesSet.clear();
+  document.querySelector('.wrap').classList.add('game-active');
+  el('home').style.display = 'none';
+  el('result').style.display = 'none';
+  el('game').style.display = 'flex';
+  el('score-display').textContent = '0';
+  el('streak-badge').classList.remove('show');
+  document.querySelectorAll('.mode-pill').forEach(p => p.classList.toggle('active', p.id === `pill-${mode}`));
+  updateHud();
+  clearInterval(timer);
+  if (selectedDuration !== 'unlimited') {
+    timer = setInterval(tick, 1000);
+  }
+  nextQuestion();
+}
+
+function tick() {
+  if (--timeLeft <= 0) endGame();
+  else updateHud();
+}
+
+function formatTime(s) {
+  if (s >= 60) return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  return String(s);
+}
+
+function updateHud() {
+  if (selectedDuration === 'unlimited') {
+    const pct = ANIMALS.length > 0 ? masteredSet.size / ANIMALS.length * 100 : 0;
+    el('timer-bar').style.width = pct + '%';
+    el('timer-bar').style.background = 'var(--accent)';
+    el('timer-text').textContent = masteredSet.size + '/' + ANIMALS.length;
+  } else {
+    el('timer-bar').style.width = (timeLeft / selectedDuration * 100) + '%';
+    const frac = timeLeft / selectedDuration;
+    el('timer-bar').style.background = frac > 0.33 ? 'var(--accent)' : frac > 0.17 ? 'var(--gold)' : 'var(--red)';
+    el('timer-text').textContent = formatTime(timeLeft);
+  }
+}
+
+function buildPool() {
+  pool = shuffle(ANIMALS.filter(a => !masteredSet.has(a.et)));
+  // In unlimited mode don't recycle — game ends when all mastered
+  if (!pool.length && selectedDuration !== 'unlimited') {
+    masteredSet.clear();
+    pool = shuffle([...ANIMALS]);
+  }
+}
+
+function nextQuestion() {
+  answered = false;
+  // Unlimited: end when all mastered
+  if (selectedDuration === 'unlimited' && masteredSet.size === ANIMALS.length) {
+    endGame(); return;
+  }
+  if (!pool.length) buildPool();
+  if (!pool.length) { endGame(); return; }
+  currentCorrect = pool.shift();
+  const opts = shuffle([currentCorrect, ...shuffle(ANIMALS.filter(a => a.et !== currentCorrect.et)).slice(0, 2)]);
+
+  const qCard = el('q-card');
+  qCard.classList.remove('fade-up'); void qCard.offsetWidth; qCard.classList.add('fade-up');
+
+  const vis = el('q-visual'); vis.innerHTML = '';
+  const optEl = el('options'); optEl.innerHTML = '';
+
+  if (mode === 'photo-to-name') {
+    vis.appendChild(makeAnimalImg(currentCorrect, 'q-animal-img', 'q-placeholder'));
+    opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn'; btn.dataset.animal = o.et;
+      btn.innerHTML = `<div class="opt-letter">${'ABC'[i]}</div><span>${o.et}</span>`;
+      btn.onclick = () => pick(btn, o);
+      optEl.appendChild(btn);
+    });
+  } else {
+    const d = document.createElement('div');
+    d.innerHTML = `<div class="q-name">${currentCorrect.et}</div><div class="q-latin">${currentCorrect.latin}</div>`;
+    vis.appendChild(d);
+    opts.forEach(o => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn animal-opt'; btn.dataset.animal = o.et;
+      btn.appendChild(makeAnimalImg(o, 'opt-animal-img', 'opt-animal-placeholder'));
+      btn.onclick = () => pick(btn, o);
+      optEl.appendChild(btn);
+    });
+  }
+}
+
+function pick(btn, chosen) {
+  if (answered) return; answered = true;
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  if (chosen.et === currentCorrect.et) {
+    btn.classList.add('correct');
+    masteredSet.add(currentCorrect.et);
+    el('score-display').textContent = ++score;
+    if (++streak >= 3) { el('streak-badge').classList.add('show'); el('streak-num').textContent = streak; }
+    if (selectedDuration === 'unlimited') updateHud();
+    setTimeout(nextQuestion, 250);
+  } else {
+    btn.classList.add('wrong', 'shake'); wrong++; streak = 0;
+    mistakesSet.add(currentCorrect.et);
+    el('streak-badge').classList.remove('show');
+    document.querySelectorAll('.opt-btn').forEach(b => {
+      if (b.dataset.animal === currentCorrect.et) b.classList.add('reveal');
+    });
+    setTimeout(nextQuestion, 500);
+  }
+}
+
+// ── END ───────────────────────────────────────────────────────
+function endGame() {
+  clearInterval(timer);
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('game').style.display = 'none';
+  el('result').style.display = 'flex';
+
+  const acc = score + wrong > 0 ? Math.round(score / (score + wrong) * 100) : 0;
+  const hs = +localStorage.getItem(hsKey()) || 0;
+  const newBest = score > hs;
+  if (newBest) localStorage.setItem(hsKey(), score);
+
+  el('result-score').textContent = el('stat-correct').textContent = score;
+  el('stat-wrong').textContent = wrong;
+  el('stat-best').textContent = newBest ? score : hs;
+  el('stat-acc').textContent = acc + '%';
+  el('new-best-badge').style.display = newBest && score ? 'block' : 'none';
+
+  let r;
+  if (selectedDuration === 'unlimited' && masteredSet.size === ANIMALS.length) {
+    r = ['🏆', 'Meister!', 'Sa tunned kõiki Eesti metsloomad — vapustav!'];
+  } else if (score === 0) {
+    r = ['😬', 'Raske voor', 'Proovi uuesti — sa üllatad ennast!'];
+  } else if (score >= 16) {
+    r = ['🌟', 'Loomaekspert!', 'Sa tunned Eesti metsloomad suurepäraselt!'];
+  } else if (score >= 10) {
+    r = ['👍', 'Tubli!', 'Oled metsloomade tundmise teel!'];
+  } else if (score >= 5) {
+    r = ['🙂', 'Hea katse', 'Veel natuke harjutust ja oled meister!'];
+  } else {
+    r = ['😅', 'Tubli pingutus', 'Harjuta edasi — sa jõuad sinna!'];
+  }
+  el('result-emoji').textContent = r[0];
+  el('result-title').textContent = r[1];
+  el('result-sub').textContent = r[2];
+
+  const rGrid = el('revision-grid'); rGrid.innerHTML = '';
+  if (mistakesSet.size) {
+    el('revision-section').style.display = 'block';
+    [...mistakesSet].forEach(name => {
+      const a = ANIMALS.find(x => x.et === name); if (!a) return;
+      const item = document.createElement('div'); item.className = 'revision-item';
+      const img = document.createElement('img'); img.src = a.img; img.className = 'revision-animal-img'; img.alt = a.et;
+      const lbl = document.createElement('div'); lbl.className = 'revision-name'; lbl.textContent = a.et;
+      const lat = document.createElement('div'); lat.className = 'revision-latin'; lat.textContent = a.latin;
+      item.append(img, lbl, lat);
+      rGrid.appendChild(item);
+    });
+  } else {
+    el('revision-section').style.display = 'none';
+  }
+}
+
+showHome();
+</script>
+</body>
+</html>
