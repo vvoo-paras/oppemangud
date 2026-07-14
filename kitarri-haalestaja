@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kitarri häälestaja — tasuta veebipõhine häälestaja</title>
+<meta name="description" content="Tasuta veebipõhine kitarri häälestaja standardhäälestusele (E2 A2 D3 G3 B3 E4). Kogu heli jääb sinu seadmesse.">
+<!-- Fonts: Google Fonts (Space Grotesk + IBM Plex Mono) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Icons: inline SVGs adapted from Lucide (https://lucide.dev), ISC/MIT licensed -->
+<style>
+  :root{
+    --bg:        #0C0F0E;
+    --surface:   #141A17;
+    --line:      #242D28;
+    --text:      #E8EDE9;
+    --muted:     #7E8A83;
+    --faint:     #55605A;
+    --green:     #46E094;   /* in tune */
+    --amber:     #E5A94E;   /* close   */
+    --red:       #E36055;   /* far off */
+    --bronze:    #C98F5F;   /* reference-tone / manual accent */
+    --accent:    var(--muted);
+    --radius:    14px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100dvh;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    user-select:none;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; }
+
+  /* ---------- header ---------- */
+  header{
+    width:100%; max-width:560px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 2px 0;
+  }
+  .wordmark{ font-weight:700; letter-spacing:0.02em; font-size:17px; }
+  .wordmark span{ color:var(--faint); font-weight:400; }
+  .status{
+    display:flex; align-items:center; gap:7px;
+    font-size:12px; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .status .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--faint); transition:background .3s;
+  }
+  .status.live .dot{ background:var(--green); box-shadow:0 0 8px var(--green); }
+
+  /* ---------- main column ---------- */
+  main{
+    width:100%; max-width:560px; flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:clamp(14px, 3vh, 28px);
+    padding-top:8px;
+  }
+
+  /* ---------- gauge ---------- */
+  .gauge-wrap{ width:min(100%, 460px); position:relative; }
+  .gauge-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .tick{ stroke:var(--line); stroke-width:2; }
+  .tick.major{ stroke:var(--faint); stroke-width:2.5; }
+  .tick-label{ fill:var(--faint); font-family:'IBM Plex Mono', monospace; font-size:12px; }
+  .zone-arc{ stroke:var(--green); stroke-width:4; fill:none; opacity:.35; transition:opacity .3s; }
+  .zone-arc.hot{ opacity:1; filter:drop-shadow(0 0 6px var(--green)); }
+  #needle{
+    stroke:var(--accent); stroke-width:3.5; stroke-linecap:round;
+    transition:stroke .25s;
+    filter:drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent));
+  }
+  #needleHub{ fill:var(--surface); stroke:var(--line); stroke-width:2; }
+
+  .note-block{
+    margin-top:-6px;
+    text-align:center; pointer-events:none;
+  }
+  #noteName{
+    font-size:clamp(64px, 18vw, 96px);
+    font-weight:700; line-height:.9; letter-spacing:-0.02em;
+    color:var(--text); transition:color .25s;
+  }
+  #noteName sub{ font-size:.32em; font-weight:500; color:var(--muted); vertical-align:baseline; }
+  #tuneState{
+    margin-top:6px; font-size:13px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--muted); height:16px; transition:color .25s;
+  }
+  #tuneState.good{ color:var(--green); }
+  #tuneState.low, #tuneState.high{ color:var(--amber); }
+
+  /* ---------- readouts ---------- */
+  .readouts{
+    display:flex; gap:10px; width:100%; max-width:460px;
+  }
+  .readout{
+    flex:1; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:10px 14px; text-align:center;
+  }
+  .readout .label{
+    font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint);
+    margin-bottom:3px;
+  }
+  .readout .value{ font-size:16px; color:var(--text); }
+  .readout .value .unit{ color:var(--muted); font-size:12px; }
+
+  /* ---------- strings ---------- */
+  .strings{
+    display:flex; gap:10px; width:100%; max-width:460px; justify-content:center;
+  }
+  .string-btn{
+    flex:1; min-width:44px; max-width:68px; aspect-ratio:1/1.35;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    color:var(--text); cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    padding-bottom:9px; gap:6px; position:relative;
+    font-family:inherit; font-size:17px; font-weight:500;
+    transition:border-color .2s, background .2s, transform .1s;
+  }
+  .string-btn:active{ transform:scale(.96); }
+  .string-btn .oct{ font-size:10px; color:var(--faint); margin-top:-6px; }
+  /* the "string" itself — gauge thickness varies by real string, thick E2 → thin E4 */
+  .string-btn .wire{
+    position:absolute; top:10px; bottom:44px; left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(var(--faint), var(--line));
+    border-radius:2px; transition:background .2s;
+  }
+  .string-btn.detected{ border-color:var(--accent); }
+  .string-btn.detected .wire{ background:linear-gradient(var(--accent), var(--line)); }
+  .string-btn.selected{ border-color:var(--bronze); background:#1A1712; }
+  .string-btn.selected .wire{ background:linear-gradient(var(--bronze), var(--line)); }
+  .string-btn.ringing .wire{ animation:vibrate .09s linear infinite; }
+  @keyframes vibrate{
+    0%{ transform:translateX(calc(-50% - 1.5px)); }
+    50%{ transform:translateX(calc(-50% + 1.5px)); }
+    100%{ transform:translateX(calc(-50% - 1.5px)); }
+  }
+
+  /* ---------- mode row ---------- */
+  .mode-row{
+    display:flex; align-items:center; gap:10px; min-height:34px;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--surface); border:1px solid var(--line); border-radius:99px;
+    color:var(--muted); font-family:inherit; font-size:13px; letter-spacing:.03em;
+    padding:7px 14px; cursor:pointer; transition:color .2s, border-color .2s;
+  }
+  .chip svg{ width:14px; height:14px; }
+  .chip.active{ color:var(--green); border-color:color-mix(in srgb, var(--green) 40%, var(--line)); }
+  .chip.bronze{ color:var(--bronze); border-color:color-mix(in srgb, var(--bronze) 40%, var(--line)); }
+  .hint{ font-size:12.5px; color:var(--faint); text-align:center; }
+
+  footer{
+    padding-top:14px; font-size:11.5px; color:var(--faint); text-align:center; max-width:460px;
+  }
+
+  /* ---------- start / error overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter:blur(6px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; padding:24px; text-align:center; z-index:10;
+  }
+  .overlay.hidden{ display:none; }
+  .overlay h1{ font-size:26px; font-weight:700; letter-spacing:-0.01em; }
+  .overlay p{ color:var(--muted); font-size:15px; line-height:1.55; max-width:340px; }
+  .big-btn{
+    display:inline-flex; align-items:center; gap:10px;
+    background:var(--green); color:#07110C; border:none; border-radius:99px;
+    font-family:inherit; font-size:16px; font-weight:700;
+    padding:15px 28px; min-height:48px; cursor:pointer;
+    transition:transform .1s, filter .2s;
+  }
+  .big-btn:hover{ filter:brightness(1.08); }
+  .big-btn:active{ transform:scale(.97); }
+  .big-btn svg{ width:19px; height:19px; }
+  .err-icon{ color:var(--red); }
+  .err-icon svg{ width:40px; height:40px; }
+
+  button:focus-visible, .chip:focus-visible{
+    outline:2px solid var(--green); outline-offset:3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .string-btn.ringing .wire{ animation:none; }
+    *{ transition-duration:.01ms !important; }
+  }
+  @media (max-height:640px){
+    #noteName{ font-size:clamp(52px, 14vw, 72px); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Häälestaja <span>· Standard E</span></div>
+  <div class="status" id="status"><div class="dot"></div><span id="statusText">Mikrofon väljas</span></div>
+</header>
+
+<main>
+  <!-- ============ gauge ============ -->
+  <div class="gauge-wrap">
+    <svg viewBox="0 0 400 250" aria-hidden="true">
+      <g id="ticks"></g>
+      <path id="zoneArc" class="zone-arc"></path>
+      <line id="needle" x1="200" y1="215" x2="200" y2="70"></line>
+      <circle id="needleHub" cx="200" cy="215" r="7"></circle>
+    </svg>
+    <div class="note-block">
+      <div id="noteName">–</div>
+      <div id="tuneState"></div>
+    </div>
+  </div>
+
+  <!-- ============ readouts ============ -->
+  <div class="readouts mono">
+    <div class="readout">
+      <div class="label">Helikõrgus</div>
+      <div class="value"><span id="hz">—</span> <span class="unit">Hz</span></div>
+    </div>
+    <div class="readout">
+      <div class="label">Sendid</div>
+      <div class="value"><span id="cents">—</span></div>
+    </div>
+    <div class="readout">
+      <div class="label">Sihtnoot</div>
+      <div class="value"><span id="target">—</span> <span class="unit" id="targetHz"></span></div>
+    </div>
+  </div>
+
+  <!-- ============ strings ============ -->
+  <div class="strings" id="strings" role="group" aria-label="Kitarri keeled"></div>
+
+  <div class="mode-row">
+    <button class="chip active" id="modeChip">
+      <!-- Lucide: audio-waveform -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/></svg>
+      <span id="modeLabel">Automaatne tuvastus</span>
+    </button>
+    <div class="hint" id="hint">Puuduta keelt, et kuulda võrdlustooni</div>
+  </div>
+</main>
+
+<footer>Kogu heli analüüsitakse kohapeal sinu brauseris — midagi ei salvestata ega saadeta edasi.</footer>
+
+<!-- ============ start overlay ============ -->
+<div class="overlay" id="startOverlay">
+  <h1>Kitarri häälestaja</h1>
+  <p>Standardhäälestus E2&nbsp;A2&nbsp;D3&nbsp;G3&nbsp;B3&nbsp;E4. Häälestaja kuulab mikrofoni kaudu ja analüüsib helikõrgust täielikult sinu seadmes.</p>
+  <button class="big-btn" id="startBtn">
+    <!-- Lucide: mic -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    Luba mikrofon
+  </button>
+  <p style="font-size:12.5px;">Saad häälestada ka kõrva järgi — puuduta mõnda keelt, et kuulda võrdlustooni.</p>
+</div>
+
+<!-- ============ error overlay ============ -->
+<div class="overlay hidden" id="errorOverlay">
+  <div class="err-icon">
+    <!-- Lucide: mic-off -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+  </div>
+  <h1>Mikrofon pole saadaval</h1>
+  <p id="errorText">Juurdepääs mikrofonile keelati. Luba mikrofon brauseri seadetes ja proovi uuesti. Võrdlustoonid töötavad ka ilma mikrofonita.</p>
+  <button class="big-btn" id="retryBtn">Proovi uuesti</button>
+  <button class="chip bronze" id="earOnlyBtn" style="font-size:14px;">Häälesta kõrva järgi</button>
+</div>
+
+<script>
+"use strict";
+
+/* ================================================================
+   CONFIG — standard tuning targets
+   ================================================================ */
+const STRINGS = [
+  { label: "E", octave: 2, freq:  82.41, gauge: 6 },   // low E  (thickest wire)
+  { label: "A", octave: 2, freq: 110.00, gauge: 5 },
+  { label: "D", octave: 3, freq: 146.83, gauge: 4 },
+  { label: "G", octave: 3, freq: 196.00, gauge: 3 },
+  { label: "B", octave: 3, freq: 246.94, gauge: 2 },
+  { label: "E", octave: 4, freq: 329.63, gauge: 1.5 }, // high E (thinnest)
+];
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const IN_TUNE_CENTS  = 5;    // |cents| ≤ 5  → green
+const CLOSE_CENTS    = 20;   // |cents| ≤ 20 → amber, beyond → red
+const MIN_FREQ       = 60;   // Hz — a bit below E2 to allow very flat strings
+const MAX_FREQ       = 500;  // Hz — a bit above E4 sharp
+const RMS_GATE       = 0.006;// signal floor: ignore near-silence
+const CLARITY_GATE   = 0.55; // normalized autocorrelation confidence floor
+const HOLD_MS        = 900;  // keep last reading visible after signal stops
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let audioCtx = null, analyser = null, mediaStream = null;
+let timeBuf = null;
+let running = false;
+let mode = "auto";           // "auto" | index of manually selected string
+let lastValid = null;        // { freq, cents, stringIdx, time }
+let displayCents = 0;        // damped needle position
+let ringingTimer = null;
+
+/* ================================================================
+   PITCH DETECTION — time-domain autocorrelation
+   ================================================================
+   Why autocorrelation instead of an FFT peak:
+   A plucked low E (82 Hz) often has *more* energy in its 2nd/3rd
+   harmonics than in the fundamental, so the tallest FFT bin is
+   frequently an octave (or a fifth) too high. Autocorrelation works
+   in the time domain: it slides the waveform against itself and
+   finds the lag at which it best repeats. That lag IS the period of
+   the fundamental, regardless of how energy is spread across
+   harmonics — which makes it far more reliable for low strings.
+
+   Steps:
+   1. RMS gate — bail out on silence/noise floor.
+   2. Compute normalized autocorrelation r(lag) over the lag range
+      corresponding to MAX_FREQ..MIN_FREQ (no need to scan further).
+      r(lag) = Σ x[i]·x[i+lag] / Σ x[i]²  → 1.0 means perfect repeat.
+   3. Pick the lag with the highest r. Reject if r < CLARITY_GATE
+      (unpitched noise, e.g. pick scrape or talking).
+   4. Octave-error guard: a strong periodic signal also correlates at
+      2× its true period. If r(bestLag/2) is nearly as strong as
+      r(bestLag), the *shorter* lag (higher frequency) is the real
+      fundamental — prefer it.
+   5. Parabolic interpolation around the peak for sub-sample lag
+      precision (one FFT-bin of error at 82 Hz would be several
+      cents; interpolation brings us well under 1 cent).
+   ================================================================ */
+function detectPitch(buf, sampleRate) {
+  const N = buf.length;
+
+  // -- 1. energy gate --------------------------------------------
+  let energy = 0;
+  for (let i = 0; i < N; i++) energy += buf[i] * buf[i];
+  const rms = Math.sqrt(energy / N);
+  if (rms < RMS_GATE) return null;
+
+  // -- 2. normalized cross-correlation over the useful lag range --
+  // Proper normalization matters: dividing by a single global energy
+  // term adds a lag-dependent tilt that drags the interpolated peak
+  // several cents flat. Instead normalize each lag by the energy of
+  // the two windows actually being compared:
+  //   r(lag) = Σ x[i]·x[i+lag] / √( E[0..N-lag) · E[lag..N) )
+  // Prefix sums make the per-lag energy lookups O(1).
+  const minLag = Math.floor(sampleRate / MAX_FREQ); // high pitch → short lag
+  const maxLag = Math.min(Math.floor(sampleRate / MIN_FREQ), N - 1);
+  const sq = new Float64Array(N + 1);
+  for (let i = 0; i < N; i++) sq[i + 1] = sq[i] + buf[i] * buf[i];
+  const r = new Float32Array(maxLag + 1);
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let sum = 0;
+    for (let i = 0; i < N - lag; i++) sum += buf[i] * buf[i + lag];
+    const e1 = sq[N - lag];          // energy of x[0 .. N-lag)
+    const e2 = sq[N] - sq[lag];      // energy of x[lag .. N)
+    r[lag] = sum / Math.sqrt(e1 * e2 + 1e-12);
+  }
+
+  // -- 3. global max as a clarity reference -----------------------
+  let maxVal = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) if (r[lag] > maxVal) maxVal = r[lag];
+  if (maxVal < CLARITY_GATE) return null;
+
+  // -- 4. fundamental = argmax of the FIRST strong peak region -----
+  // A periodic signal correlates at its period T *and* at every
+  // multiple (2T, 3T, ...), all with r ≈ 1. Taking the global max can
+  // land on a multiple and report an octave (or more) too low, so we
+  // want the earliest strong peak — that's T. But noise can put tiny
+  // local bumps on a peak's shoulder, so instead of the first local
+  // maximum we take the argmax of the first contiguous region where
+  // r stays strong (enter at 90% of the global max, exit at 80% —
+  // the hysteresis keeps noise from splitting one peak into two).
+  let bestLag = -1, bestVal = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    if (r[lag] >= 0.9 * maxVal) {
+      while (lag <= maxLag && r[lag] >= 0.8 * maxVal) {
+        if (r[lag] > bestVal) { bestVal = r[lag]; bestLag = lag; }
+        lag++;
+      }
+      break;
+    }
+  }
+  if (bestLag === -1) return null;
+  // A genuine pitch produces a peak *contained* in the scan range —
+  // r rises to it and falls after it. An out-of-range tone (e.g. mains
+  // hum below MIN_FREQ) has no true peak in range, so its correlation
+  // is still climbing at the boundary and the argmax lands exactly on
+  // minLag/maxLag. Reject boundary hits; this also guarantees both
+  // interpolation neighbors exist.
+  if (bestLag <= minLag || bestLag >= maxLag) return null;
+
+  // -- 5. parabolic interpolation of the peak --------------------
+  let refined = bestLag;
+  if (bestLag > minLag && bestLag < maxLag) {
+    const a = r[bestLag - 1], b = r[bestLag], c = r[bestLag + 1];
+    const denom = a - 2 * b + c;
+    if (denom !== 0) refined = bestLag + 0.5 * (a - c) / denom;
+  }
+
+  return { freq: sampleRate / refined, clarity: bestVal };
+}
+
+/* ================================================================
+   MUSIC MATH
+   ================================================================ */
+const centsOff = (freq, target) => 1200 * Math.log2(freq / target);
+
+function nearestString(freq) {
+  // nearest target measured in cents (log space), not raw Hz
+  let best = 0, bestDist = Infinity;
+  STRINGS.forEach((s, i) => {
+    const d = Math.abs(centsOff(freq, s.freq));
+    if (d < bestDist) { bestDist = d; best = i; }
+  });
+  return best;
+}
+
+function chromaticName(freq) {
+  const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+  return { name: NOTE_NAMES[((midi % 12) + 12) % 12], octave: Math.floor(midi / 12) - 1 };
+}
+
+/* ================================================================
+   AUDIO SETUP
+   ================================================================ */
+async function startMic() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,  // these DSP stages distort pitch —
+        noiseSuppression: false,  // we want the raw signal
+        autoGainControl:  false,
+      }
+    });
+  } catch (err) {
+    showError(err);
+    return false;
+  }
+  ensureCtx();
+  const source = audioCtx.createMediaStreamSource(mediaStream);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;                    // ~46 ms @ 44.1 kHz — ≥3 periods of E2
+  timeBuf = new Float32Array(analyser.fftSize);
+  source.connect(analyser);
+  running = true;
+  setStatus(true);
+  return true;
+}
+
+function ensureCtx() {
+  // AudioContext must be created/resumed inside a user gesture (autoplay policy)
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+/* reference tone: soft plucked-ish triangle through a lowpass */
+function playReference(freq, btn) {
+  ensureCtx();
+  const t = audioCtx.currentTime;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const lp   = audioCtx.createBiquadFilter();
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  lp.type = "lowpass";
+  lp.frequency.value = freq * 6;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);   // fast attack
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.6); // natural decay
+  osc.connect(lp).connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + 1.7);
+
+  btn.classList.add("ringing");
+  clearTimeout(ringingTimer);
+  ringingTimer = setTimeout(() => btn.classList.remove("ringing"), 1600);
+}
+
+/* ================================================================
+   ANALYSIS + RENDER LOOP
+   ================================================================ */
+function loop() {
+  requestAnimationFrame(loop);
+
+  if (running && analyser) {
+    analyser.getFloatTimeDomainData(timeBuf);
+    const p = detectPitch(timeBuf, audioCtx.sampleRate);
+    if (p && p.freq >= MIN_FREQ && p.freq <= MAX_FREQ) {
+      const idx = (mode === "auto") ? nearestString(p.freq) : mode;
+      lastValid = {
+        freq: p.freq,
+        cents: Math.max(-50, Math.min(50, centsOff(p.freq, STRINGS[idx].freq))),
+        stringIdx: idx,
+        time: performance.now(),
+      };
+    }
+  }
+
+  const fresh = lastValid && (performance.now() - lastValid.time < HOLD_MS);
+  const targetCents = fresh ? lastValid.cents : 0;
+
+  // critically-damped-ish smoothing: kills jitter, keeps response snappy
+  displayCents += (targetCents - displayCents) * 0.14;
+
+  renderGauge(fresh);
+  renderReadouts(fresh);
+}
+
+/* ================================================================
+   UI
+   ================================================================ */
+const $ = (id) => document.getElementById(id);
+const needle = $("needle"), zoneArc = $("zoneArc");
+const CX = 200, CY = 215, R_NEEDLE = 145;
+const centsToAngle = (c) => (c / 50) * 55; // ±50 cents → ±55°
+
+function buildGauge() {
+  const g = $("ticks");
+  const rIn = 158, frag = document.createDocumentFragment();
+  for (let c = -50; c <= 50; c += 5) {
+    const major = (c % 25 === 0);
+    const a = (centsToAngle(c) - 90) * Math.PI / 180;
+    const rOut = rIn + (major ? 16 : 9);
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    t.setAttribute("x1", CX + rIn  * Math.cos(a)); t.setAttribute("y1", CY + rIn  * Math.sin(a));
+    t.setAttribute("x2", CX + rOut * Math.cos(a)); t.setAttribute("y2", CY + rOut * Math.sin(a));
+    t.setAttribute("class", "tick" + (major ? " major" : ""));
+    frag.appendChild(t);
+    if (major) {
+      const lr = rIn + 30;
+      const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      lbl.setAttribute("x", CX + lr * Math.cos(a));
+      lbl.setAttribute("y", CY + lr * Math.sin(a) + 4);
+      lbl.setAttribute("text-anchor", "middle");
+      lbl.setAttribute("class", "tick-label");
+      lbl.textContent = c > 0 ? "+" + c : c;
+      frag.appendChild(lbl);
+    }
+  }
+  g.appendChild(frag);
+
+  // green ±5-cent zone arc
+  const rZone = 152;
+  const a1 = (centsToAngle(-IN_TUNE_CENTS) - 90) * Math.PI / 180;
+  const a2 = (centsToAngle( IN_TUNE_CENTS) - 90) * Math.PI / 180;
+  zoneArc.setAttribute("d",
+    `M ${CX + rZone * Math.cos(a1)} ${CY + rZone * Math.sin(a1)} ` +
+    `A ${rZone} ${rZone} 0 0 1 ${CX + rZone * Math.cos(a2)} ${CY + rZone * Math.sin(a2)}`);
+}
+
+function renderGauge(fresh) {
+  needle.setAttribute("transform", `rotate(${centsToAngle(displayCents)} ${CX} ${CY})`);
+  const abs = Math.abs(displayCents);
+  let color = "var(--muted)";
+  if (fresh) color = abs <= IN_TUNE_CENTS ? "var(--green)" : abs <= CLOSE_CENTS ? "var(--amber)" : "var(--red)";
+  document.documentElement.style.setProperty("--accent", color);
+  zoneArc.classList.toggle("hot", fresh && abs <= IN_TUNE_CENTS);
+}
+
+function renderReadouts(fresh) {
+  const stateEl = $("tuneState"), noteEl = $("noteName");
+  if (fresh) {
+    const { freq, cents, stringIdx } = lastValid;
+    const det = chromaticName(freq);
+    noteEl.innerHTML = `${det.name}<sub>${det.octave}</sub>`;
+    $("hz").textContent = freq.toFixed(1);
+    $("cents").textContent = (cents >= 0 ? "+" : "") + cents.toFixed(0);
+    const s = STRINGS[stringIdx];
+    $("target").textContent = s.label + s.octave;
+    $("targetHz").textContent = s.freq.toFixed(1) + " Hz";
+    if (Math.abs(cents) <= IN_TUNE_CENTS) { stateEl.textContent = "Hääles";  stateEl.className = "good"; }
+    else if (cents < 0)                   { stateEl.textContent = "Liiga madal";  stateEl.className = "low";  }
+    else                                  { stateEl.textContent = "Liiga kõrge"; stateEl.className = "high"; }
+    highlightString(stringIdx, mode !== "auto");
+  } else {
+    noteEl.textContent = "–";
+    $("hz").textContent = "—"; $("cents").textContent = "—";
+    stateEl.textContent = running ? "Kuulan…" : "";
+    stateEl.className = "";
+    if (mode === "auto") {
+      $("target").textContent = "—"; $("targetHz").textContent = "";
+      highlightString(-1, false);
+    } else {
+      const s = STRINGS[mode];
+      $("target").textContent = s.label + s.octave;
+      $("targetHz").textContent = s.freq.toFixed(1) + " Hz";
+    }
+  }
+}
+
+let litIdx = -1, litManual = false;
+function highlightString(idx, manual) {
+  if (idx === litIdx && manual === litManual) return;
+  litIdx = idx; litManual = manual;
+  document.querySelectorAll(".string-btn").forEach((b, i) => {
+    b.classList.toggle("detected", i === idx && !manual);
+    b.classList.toggle("selected", i === idx &&  manual);
+  });
+}
+
+function buildStrings() {
+  const wrap = $("strings");
+  STRINGS.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.className = "string-btn";
+    b.setAttribute("aria-label", `${s.label}${s.octave}, ${s.freq.toFixed(1)} hertsi, mängi võrdlustooni`);
+    b.innerHTML = `<div class="wire" style="width:${s.gauge}px"></div><span>${s.label}</span><span class="oct">${s.octave}</span>`;
+    b.addEventListener("click", () => {
+      mode = i;                      // tapping a string = manual mode on that string
+      updateModeChip();
+      highlightString(i, true);
+      playReference(s.freq, b);
+    });
+    wrap.appendChild(b);
+  });
+}
+
+function updateModeChip() {
+  const chip = $("modeChip"), label = $("modeLabel");
+  if (mode === "auto") {
+    chip.className = "chip active";
+    label.textContent = "Automaatne tuvastus";
+    $("hint").textContent = "Puuduta keelt, et kuulda võrdlustooni";
+  } else {
+    const s = STRINGS[mode];
+    chip.className = "chip bronze";
+    label.textContent = `Häälestan ${s.label}${s.octave} — puuduta automaatseks`;
+    $("hint").textContent = "Puuduta keelt uuesti, et tooni korrata";
+  }
+}
+
+function setStatus(live) {
+  $("status").classList.toggle("live", live);
+  $("statusText").textContent = live ? "Kuulan" : "Mikrofon väljas";
+}
+
+function showError(err) {
+  $("startOverlay").classList.add("hidden");
+  const txt = $("errorText");
+  if (err && (err.name === "NotFoundError" || err.name === "DevicesNotFoundError")) {
+    txt.textContent = "Sellel seadmel mikrofoni ei leitud. Võrdlustoonid töötavad siiski — puuduta keelt ja häälesta kõrva järgi.";
+  } else if (err && err.name === "NotAllowedError") {
+    txt.textContent = "Juurdepääs mikrofonile keelati. Luba mikrofon brauseri seadetes ja proovi uuesti. Võrdlustoonid töötavad ka ilma mikrofonita.";
+  } else {
+    txt.textContent = "Mikrofoni ei õnnestunud käivitada. Kontrolli, et mõni teine rakendus seda ei kasuta, ja proovi uuesti.";
+  }
+  $("errorOverlay").classList.remove("hidden");
+  setStatus(false);
+}
+
+/* ================================================================
+   WIRING
+   ================================================================ */
+buildGauge();
+buildStrings();
+updateModeChip();
+requestAnimationFrame(loop);
+
+$("startBtn").addEventListener("click", async () => {
+  ensureCtx(); // gesture unlocks the AudioContext
+  if (await startMic()) $("startOverlay").classList.add("hidden");
+});
+
+$("retryBtn").addEventListener("click", async () => {
+  if (await startMic()) $("errorOverlay").classList.add("hidden");
+});
+
+$("earOnlyBtn").addEventListener("click", () => {
+  $("errorOverlay").classList.add("hidden"); // tuner UI stays usable for reference tones
+});
+
+$("modeChip").addEventListener("click", () => {
+  mode = "auto";
+  updateModeChip();
+  highlightString(-1, false);
+});
+</script>
+</body>
+</html>
