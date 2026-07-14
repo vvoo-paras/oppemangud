@@ -102,6 +102,7 @@
     text-transform:uppercase; color:var(--dim);
   }
   .section-head::after { content:''; flex:1; height:1px; background:var(--border); }
+  .section-head + .grid + .section-head { margin-top:56px; }
 
   /* ── GRID ── */
   .grid {
@@ -310,6 +311,27 @@
         <div class="card-desc">Tunne ära Eesti taimed piltide järgi. Männist mustikamarjani.</div>
       </div>
     </div>
+
+  </div>
+
+  <div class="section-head">Tööriistad</div>
+
+  <div class="grid">
+
+    <!-- Kitarrihäälestaja -->
+    <a class="card live" href="kitarri-haalestaja.html"
+       style="--accent:rgba(201,143,95,0.8);--glow:rgba(201,143,95,0.1);--accent-text:#c98f5f">
+      <div class="card-thumb" style="--thumb-bg:rgba(201,143,95,0.05)">
+        🎸
+        <span class="card-pill live-pill">Saadaval</span>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Muusika · Tööriist</div>
+        <div class="card-title">Kitarrihäälestaja</div>
+        <div class="card-desc">Häälesta kitarr mikrofoni abil või kõrva järgi. Töötab otse brauseris — heli jääb sinu seadmesse.</div>
+        <div class="card-cta">Häälesta →</div>
+      </div>
+    </a>
 
   </div>
 
