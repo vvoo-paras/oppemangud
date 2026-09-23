@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matemaatikamäng</title>
+<style>
+  :root {
+    --green:#4ade80; --red:#f87171; --blue:#60a5fa; --gold:#fbbf24;
+    --glass:rgba(255,255,255,0.07); --glass-b:rgba(255,255,255,0.13);
+    --glass-h:rgba(255,255,255,0.12); --text:#f1f5f9;
+    --muted:rgba(241,245,249,0.5); --r:18px;
+    --accent:#fb923c; --accent-dim:rgba(251,146,60,0.15); --accent-border:rgba(251,146,60,0.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  button,.mode-card{touch-action:manipulation}
+  body{
+    color:var(--text);min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:24px 16px 40px;
+    background:#04071a;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(ellipse 70% 50% at 15% 0%,  rgba(251,146,60,0.16) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 45% at 90% 100%, rgba(96,165,250,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 60% at 50% 50%,  rgba(255,255,255,0.02) 0%, transparent 70%);
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:520px;transition:max-width .4s}
+  .wrap.game-active{max-width:860px}
+  .glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(20px)}
+
+  /* HOME */
+  #home{display:flex;flex-direction:column;gap:14px}
+  .home-hero{padding:40px 32px 34px;text-align:center}
+  .home-hero h1{
+    font-size:2.6rem;font-weight:700;letter-spacing:-.5px;line-height:1.1;margin-bottom:12px;
+    background:linear-gradient(135deg,#fff 40%,#fb923c);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .home-hero p{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:340px;margin:0 auto}
+
+  .picker-wrap{padding:14px 18px 16px}
+  .picker-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .picker-pills{display:flex;flex-wrap:wrap;gap:7px}
+  .picker-pill{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:99px;
+    padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--muted);
+    cursor:pointer;transition:background .2s,border-color .2s,color .2s;
+  }
+  .picker-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  @media(hover:hover){.picker-pill:hover:not(.active){background:var(--glass-h);color:var(--text)}}
+
+  .btn-start{
+    background:var(--accent);color:#1a0d00;border:none;border-radius:var(--r);
+    padding:16px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-start:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-start:active{transform:translateY(1px)}
+  .hs-row{padding:13px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem}
+  .hs-row .hs-label{color:var(--muted)}
+  .hs-row .hs-val{font-weight:700;color:var(--gold)}
+
+  /* GAME */
+  #game{display:none;flex-direction:column;gap:14px}
+  .hud{display:flex;align-items:center;gap:14px;padding:12px 18px}
+  .hud-score{font-size:.9rem;font-weight:500;white-space:nowrap;color:var(--muted)}
+  .hud-score span{color:var(--text);font-size:1.15rem;font-weight:700}
+  .timer-wrap{display:flex;align-items:center;gap:10px;flex:1}
+  .timer-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+  .timer-bar{height:100%;background:var(--green);border-radius:99px;transition:width 1s linear,background .5s}
+  .timer-text{font-size:.9rem;font-weight:700;min-width:24px;text-align:right;color:var(--muted)}
+  .streak-badge{
+    background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+    color:var(--gold);font-size:.72rem;font-weight:700;
+    padding:4px 10px;border-radius:99px;display:none;white-space:nowrap;
+  }
+  .streak-badge.show{display:block}
+  .btn-stop{
+    background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+    border-radius:99px;width:28px;height:28px;font-size:.7rem;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  @media(hover:hover){.btn-stop:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}}
+
+  .game-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  .q-card{
+    padding:32px 24px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;min-height:300px;
+  }
+  .q-label{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .q-equation{font-size:2.6rem;font-weight:700;line-height:1.2;letter-spacing:-1px}
+  .q-equation .q-answer-mark{color:var(--accent)}
+  .options{display:flex;flex-direction:column;gap:10px;justify-content:center;height:100%}
+  .opt-btn{
+    background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+    padding:14px 16px;font-size:1.3rem;font-weight:700;color:var(--text);
+    cursor:pointer;display:flex;align-items:center;gap:14px;
+    text-align:left;width:100%;backdrop-filter:blur(20px);
+    transition:background .15s,border-color .15s,transform .1s;
+  }
+  @media(hover:hover){.opt-btn:hover:not(:disabled){background:var(--glass-h);border-color:rgba(255,255,255,.28);transform:translateX(3px)}}
+  .opt-btn:disabled{cursor:default}
+  .opt-btn.correct{background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green)}
+  .opt-btn.wrong  {background:rgba(248,113,113,.13);border-color:var(--red);color:var(--red)}
+  .opt-btn.reveal {background:rgba(74,222,128,.13);border-color:var(--green);color:var(--green);animation:pulse .4s ease}
+  .opt-letter{
+    width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.78rem;flex-shrink:0;color:var(--muted);
+  }
+  .opt-btn.correct .opt-letter,.opt-btn.reveal .opt-letter{background:rgba(74,222,128,.2);color:var(--green)}
+  .opt-btn.wrong .opt-letter{background:rgba(248,113,113,.2);color:var(--red)}
+
+  /* RESULT */
+  #result{display:none;flex-direction:column;gap:14px}
+  .result-card{padding:40px 32px;text-align:center}
+  .result-emoji{font-size:3.5rem;margin-bottom:10px;display:block}
+  .result-title{font-size:2rem;font-weight:700;margin-bottom:6px}
+  .result-sub{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+  .result-score-big{font-size:4.5rem;font-weight:700;color:var(--accent);line-height:1;letter-spacing:-2px}
+  .result-score-label{font-size:.75rem;color:var(--muted);margin:4px 0 28px;text-transform:uppercase;letter-spacing:1px}
+  .new-best{
+    display:inline-block;margin-bottom:16px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.28);
+    color:var(--gold);font-size:.78rem;font-weight:700;padding:5px 14px;border-radius:99px;
+  }
+  .result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+  .stat-box{background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:12px;padding:14px 10px}
+  .stat-num{font-size:1.5rem;font-weight:700}
+  .stat-lbl{font-size:.72rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+  .result-btns{display:flex;flex-direction:column;gap:10px}
+  .btn-again{
+    background:var(--accent);color:#1a0d00;border:none;border-radius:var(--r);
+    padding:15px;font-size:1rem;font-weight:700;cursor:pointer;
+    transition:opacity .15s,transform .1s;
+  }
+  @media(hover:hover){.btn-again:hover{opacity:.9;transform:translateY(-1px)}}
+  .btn-home{
+    background:transparent;color:var(--muted);border:1px solid var(--glass-b);
+    border-radius:var(--r);padding:13px;font-size:.9rem;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  @media(hover:hover){.btn-home:hover{border-color:rgba(255,255,255,.3);color:var(--text)}}
+
+  /* REVISION */
+  .revision-card{padding:20px 22px}
+  .revision-title{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .revision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .revision-item{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.22);border-radius:12px;padding:12px 10px;text-align:center}
+  .revision-eq{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.2}
+  .revision-ans{font-size:.78rem;color:var(--accent);margin-top:5px;font-weight:700}
+
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .shake{animation:shake .35s ease}
+  @keyframes fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fade-up .28s ease forwards}
+
+  @media(max-width:620px){
+    .game-body{grid-template-columns:1fr}
+    .wrap.game-active{max-width:520px}
+    .home-hero h1{font-size:2rem}
+    .home-hero{padding:28px 20px 22px}
+    .result-card{padding:28px 20px}
+    .q-card{min-height:170px;padding:20px 16px}
+    .q-equation{font-size:2rem}
+    .hud{padding:10px 12px;gap:8px}
+  }
+  @media(max-width:380px){
+    .home-hero h1{font-size:1.7rem}
+    .result-score-big{font-size:3.5rem}
+    .hud-score{font-size:.8rem}
+    .timer-text{font-size:.8rem}
+    .streak-badge{font-size:.66rem;padding:3px 8px}
+    .q-equation{font-size:1.7rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="home">
+    <div class="glass home-hero">
+      <h1>Matemaatikamäng</h1>
+      <p id="hero-desc">Aega on 60 sekundit. Liitmine, kerge tase. Mitu arvutad õigesti?</p>
+    </div>
+    <div class="glass picker-wrap">
+      <div class="picker-label">Tehe</div>
+      <div class="picker-pills">
+        <button class="picker-pill active" data-op="add" onclick="selectOperation('add')">➕ Liitmine</button>
+        <button class="picker-pill"        data-op="sub" onclick="selectOperation('sub')">➖ Lahutamine</button>
+        <button class="picker-pill"        data-op="mul" onclick="selectOperation('mul')">✖️ Korrutamine</button>
+        <button class="picker-pill"        data-op="div" onclick="selectOperation('div')">➗ Jagamine</button>
+        <button class="picker-pill"        data-op="mixed" onclick="selectOperation('mixed')">🔀 Segamini</button>
+      </div>
+    </div>
+    <div class="glass picker-wrap">
+      <div class="picker-label">Raskusaste</div>
+      <div class="picker-pills">
+        <button class="picker-pill active" data-diff="easy"   onclick="selectDifficulty('easy')">🟢 Kerge</button>
+        <button class="picker-pill"        data-diff="medium" onclick="selectDifficulty('medium')">🟡 Keskmine</button>
+        <button class="picker-pill"        data-diff="hard"   onclick="selectDifficulty('hard')">🔴 Raske</button>
+      </div>
+    </div>
+    <div class="glass picker-wrap">
+      <div class="picker-label">Mängu kestus</div>
+      <div class="picker-pills">
+        <button class="picker-pill"        data-dur="30"        onclick="selectDuration(30)">⏱ 30 sek</button>
+        <button class="picker-pill active" data-dur="60"        onclick="selectDuration(60)">⏱ 60 sek</button>
+        <button class="picker-pill"        data-dur="120"       onclick="selectDuration(120)">⏱ 2 min</button>
+        <button class="picker-pill"        data-dur="300"       onclick="selectDuration(300)">⏱ 5 min</button>
+        <button class="picker-pill"        data-dur="unlimited" onclick="selectDuration('unlimited')">♾ Lõputu</button>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Alusta →</button>
+    <div class="glass hs-row" id="hs-row" style="display:none">
+      <span class="hs-label">🏆 Isiklik rekord</span>
+      <span class="hs-val" id="hs-display">—</span>
+    </div>
+    <a href="index.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+  </div>
+
+  <div id="game">
+    <div class="glass hud">
+      <div class="hud-score">Skoor <span id="score-display">0</span></div>
+      <div class="streak-badge" id="streak-badge">🔥 <span id="streak-num">0</span> järjest</div>
+      <div class="timer-wrap">
+        <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar"></div></div>
+        <div class="timer-text" id="timer-text">60</div>
+      </div>
+      <button class="btn-stop" onclick="endGame()" title="Lõpeta mäng">✕</button>
+    </div>
+    <div class="game-body">
+      <div class="glass q-card" id="q-card"><div id="q-visual"></div></div>
+      <div class="options" id="options"></div>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="glass result-card">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-title" id="result-title">Aeg läbi!</div>
+      <div class="result-sub" id="result-sub">Siin on sinu tulemus</div>
+      <div id="new-best-badge" style="display:none"><span class="new-best">✨ Uus isiklik rekord</span></div>
+      <div class="result-score-big" id="result-score">0</div>
+      <div class="result-score-label">õiget vastust</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-num" id="stat-correct" style="color:var(--green)">0</div><div class="stat-lbl">Õige</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-wrong" style="color:var(--red)">0</div><div class="stat-lbl">Vale</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-best" style="color:var(--gold)">0</div><div class="stat-lbl">Rekord</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-acc" style="color:var(--accent)">0%</div><div class="stat-lbl">Täpsus</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-again" onclick="startGame()">Mängi uuesti →</button>
+        <button class="btn-home" onclick="showHome()">Muuda seadeid</button>
+        <a href="index.html" style="text-align:center;color:var(--muted);font-size:1.23rem;text-decoration:none;padding:4px 0;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Tagasi Õppemängudesse</a>
+      </div>
+    </div>
+  </div>
+  <div id="revision-section" style="display:none" class="glass revision-card">
+    <div class="revision-title">🔁 Nendega eksisid</div>
+    <div id="revision-grid" class="revision-grid"></div>
+  </div>
+</div>
+<script>
+const OP_LABEL = { add:'Liitmine', sub:'Lahutamine', mul:'Korrutamine', div:'Jagamine', mixed:'Segamini' };
+const OP_SIGN  = { add:'+', sub:'−', mul:'×', div:'÷' };
+const DIFF_LABEL = { easy:'kerge tase', medium:'keskmine tase', hard:'raske tase' };
+const RANGE = {
+  easy:   { addsub:[1,10],   mulmax:5,  divmax:5  },
+  medium: { addsub:[5,50],   mulmax:10, divmax:10 },
+  hard:   { addsub:[10,120], mulmax:12, divmax:20 }
+};
+
+const el = id => document.getElementById(id);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+const randInt = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+
+let selectedOperation='add', selectedDifficulty='easy', selectedDuration=60;
+let score=0, wrong=0, streak=0;
+let timeLeft=60, timer=null, answered=false, current=null;
+let mistakes=[], seenTexts=new Set();
+
+function selectOperation(op) {
+  selectedOperation = op;
+  document.querySelectorAll('[data-op]').forEach(p => p.classList.toggle('active', p.dataset.op===op));
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+function selectDifficulty(d) {
+  selectedDifficulty = d;
+  document.querySelectorAll('[data-diff]').forEach(p => p.classList.toggle('active', p.dataset.diff===d));
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+function selectDuration(d) {
+  selectedDuration = d;
+  document.querySelectorAll('[data-dur]').forEach(p => p.classList.toggle('active', p.dataset.dur===String(d)));
+  updateHeroSubtitle();
+  refreshHsDisplay();
+}
+function updateHeroSubtitle() {
+  const opLbl = OP_LABEL[selectedOperation];
+  const diffLbl = DIFF_LABEL[selectedDifficulty];
+  if(selectedDuration==='unlimited') {
+    el('hero-desc').textContent = `Lõputu mäng. ${opLbl}, ${diffLbl}. Kui kaua sa vastu pead?`;
+  } else if(selectedDuration>=60) {
+    const m=selectedDuration/60;
+    el('hero-desc').textContent = `Aega on ${m} minut${m>1?'it':''}. ${opLbl}, ${diffLbl}. Mitu arvutad õigesti?`;
+  } else {
+    el('hero-desc').textContent = `Aega on ${selectedDuration} sekundit. ${opLbl}, ${diffLbl}. Mitu arvutad õigesti?`;
+  }
+}
+function hsKey() { return `mq_hs_${selectedOperation}_${selectedDifficulty}_${selectedDuration}`; }
+function refreshHsDisplay() {
+  const hs = +localStorage.getItem(hsKey())||0;
+  if(hs) { el('hs-display').textContent=hs+' õiget'; el('hs-row').style.display='flex'; }
+  else { el('hs-row').style.display='none'; }
+}
+function formatTime(s) { return s>=60?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):String(s); }
+
+function genProblem() {
+  let op = selectedOperation==='mixed' ? ['add','sub','mul','div'][randInt(0,3)] : selectedOperation;
+  const r = RANGE[selectedDifficulty];
+  let a,b,answer,text;
+  if(op==='add') {
+    a=randInt(r.addsub[0],r.addsub[1]); b=randInt(r.addsub[0],r.addsub[1]);
+    answer=a+b; text=`${a} + ${b}`;
+  } else if(op==='sub') {
+    a=randInt(r.addsub[0],r.addsub[1]); b=randInt(r.addsub[0],r.addsub[1]);
+    if(b>a) [a,b]=[b,a];
+    answer=a-b; text=`${a} − ${b}`;
+  } else if(op==='mul') {
+    a=randInt(2,r.mulmax); b=randInt(2, selectedDifficulty==='hard'?20:r.mulmax);
+    answer=a*b; text=`${a} × ${b}`;
+  } else {
+    b=randInt(2,r.divmax); answer=randInt(2, r.divmax); a=b*answer;
+    text=`${a} ÷ ${b}`;
+  }
+  return {text, answer, op};
+}
+function genDistractors(answer) {
+  const set=new Set([answer]);
+  let guard=0;
+  while(set.size<3 && guard<40) {
+    guard++;
+    const delta = randInt(1, Math.max(4, Math.round(Math.abs(answer)*0.25)+2));
+    const val = Math.random()<0.5 ? answer-delta : answer+delta;
+    if(val<0 || set.has(val)) continue;
+    set.add(val);
+  }
+  while(set.size<3) set.add(Math.max(0,answer)+set.size+1);
+  return shuffle([...set]);
+}
+
+function showHome() {
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('home').style.display='flex'; el('game').style.display='none'; el('result').style.display='none';
+  el('revision-section').style.display='none';
+  refreshHsDisplay();
+}
+function startGame() {
+  score=0; wrong=0; streak=0; answered=false;
+  timeLeft = selectedDuration==='unlimited' ? 0 : selectedDuration;
+  mistakes=[]; seenTexts=new Set();
+  document.querySelector('.wrap').classList.add('game-active');
+  el('home').style.display='none'; el('result').style.display='none'; el('game').style.display='flex';
+  el('score-display').textContent='0';
+  el('streak-badge').classList.remove('show');
+  updateTimer();
+  clearInterval(timer);
+  if(selectedDuration!=='unlimited') timer=setInterval(tick,1000);
+  nextQuestion();
+}
+function tick() { if(--timeLeft<=0) endGame(); else updateTimer(); }
+function updateTimer() {
+  if(selectedDuration==='unlimited') {
+    el('timer-bar').style.width='100%';
+    el('timer-bar').style.background='var(--accent)';
+    el('timer-text').textContent='∞';
+  } else {
+    el('timer-bar').style.width=(timeLeft/selectedDuration*100)+'%';
+    const f=timeLeft/selectedDuration;
+    el('timer-bar').style.background=f>0.33?'var(--green)':f>0.17?'var(--gold)':'var(--red)';
+    el('timer-text').textContent=formatTime(timeLeft);
+  }
+}
+function nextQuestion() {
+  answered=false;
+  current = genProblem();
+  const opts = genDistractors(current.answer);
+
+  const qCard=el('q-card');
+  qCard.classList.remove('fade-up'); void qCard.offsetWidth; qCard.classList.add('fade-up');
+
+  const vis=el('q-visual'); vis.innerHTML='';
+  const optEl=el('options'); optEl.innerHTML='';
+
+  const label=document.createElement('div');
+  label.className='q-label'; label.textContent='Mis on vastus?';
+  const eq=document.createElement('div');
+  eq.className='q-equation'; eq.innerHTML=`${current.text} <span class="q-answer-mark">= ?</span>`;
+  vis.appendChild(label); vis.appendChild(eq);
+
+  opts.forEach((o,i) => {
+    const btn=document.createElement('button');
+    btn.className='opt-btn'; btn.dataset.val=o;
+    btn.innerHTML=`<div class="opt-letter">${'ABC'[i]}</div><span>${o}</span>`;
+    btn.onclick=()=>pick(btn,o);
+    optEl.appendChild(btn);
+  });
+}
+function pick(btn, chosen) {
+  if(answered) return; answered=true;
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  if(chosen===current.answer) {
+    btn.classList.add('correct');
+    el('score-display').textContent=++score;
+    if(++streak>=3) { el('streak-badge').classList.add('show'); el('streak-num').textContent=streak; }
+    setTimeout(nextQuestion,250);
+  } else {
+    btn.classList.add('wrong','shake'); wrong++; streak=0;
+    el('streak-badge').classList.remove('show');
+    if(!seenTexts.has(current.text)) { seenTexts.add(current.text); mistakes.push(current); }
+    document.querySelectorAll('.opt-btn').forEach(b=>{ if(+b.dataset.val===current.answer) b.classList.add('reveal'); });
+    setTimeout(nextQuestion,600);
+  }
+}
+function endGame() {
+  clearInterval(timer);
+  document.querySelector('.wrap').classList.remove('game-active');
+  el('game').style.display='none'; el('result').style.display='flex';
+  const acc=score+wrong>0?Math.round(score/(score+wrong)*100):0;
+  const key=hsKey();
+  const hs=+localStorage.getItem(key)||0;
+  const newBest=score>hs; if(newBest) localStorage.setItem(key,score);
+  el('result-score').textContent=el('stat-correct').textContent=score;
+  el('stat-wrong').textContent=wrong;
+  el('stat-best').textContent=newBest?score:hs;
+  el('stat-acc').textContent=acc+'%';
+  el('new-best-badge').style.display=newBest&&score?'block':'none';
+  const r = score===0 ? ['😬','Raske voor','Proovi uuesti — sa üllatad ennast!']
+    : score>=25 ? ['🏆','Peaarvutuse meister','Vapustav — arvutad välkkiirelt!']
+    : score>=15 ? ['🌟','Suurepärane!','Oled peastarvutuses tugev!']
+    : score>=8  ? ['👍','Tubli!','Hea algus — proovi uuesti!']
+    : ['🙂','Hea katse','Harjuta ja tule tagasi!'];
+  el('result-emoji').textContent=r[0];
+  el('result-title').textContent=r[1];
+  el('result-sub').textContent=r[2];
+
+  const revGrid=el('revision-grid'); revGrid.innerHTML='';
+  if(mistakes.length) {
+    el('revision-section').style.display='block';
+    mistakes.forEach(m => {
+      const item=document.createElement('div'); item.className='revision-item';
+      const eq=document.createElement('div'); eq.className='revision-eq'; eq.textContent=m.text;
+      const ans=document.createElement('div'); ans.className='revision-ans'; ans.textContent='= '+m.answer;
+      item.append(eq,ans); revGrid.appendChild(item);
+    });
+  } else {
+    el('revision-section').style.display='none';
+  }
+}
+
+updateHeroSubtitle();
+refreshHsDisplay();
+</script>
+</body>
+</html>
