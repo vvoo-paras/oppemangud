@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Rebase põgenemine — Õppemängud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --surface-page:#04071a;
+    --surface-raised:rgba(255,255,255,.06);
+    --surface-raised-hover:rgba(255,255,255,.10);
+    --border-default:rgba(255,255,255,.12);
+    --border-hover:rgba(255,255,255,.26);
+    --text-primary:#f1f5f9;
+    --text-muted:rgba(241,245,249,.5);
+    --text-dim:rgba(241,245,249,.24);
+    --status-success:#4ade80;
+    --status-danger:#f87171;
+    --status-gold:#fbbf24;
+    --accent-fox-game:#f97316;
+    --accent-shadow-enemy:#8b5cf6;
+    --radius-sm:12px;
+    --radius-md:16px;
+    --radius-lg:20px;
+    --radius-pill:99px;
+    --font-display:'Syne',system-ui,sans-serif;
+    --font-body:'DM Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--surface-page);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  a{text-decoration:none;color:inherit}
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:20px 20px 30px;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    transition:background .4s ease;
+  }
+  .app.tone-select,.app.tone-game{background:radial-gradient(ellipse 70% 32% at 50% -4%, rgba(249,115,22,.10) 0%, transparent 60%);}
+  .app.tone-clear{background:radial-gradient(ellipse 70% 38% at 50% 8%, rgba(74,222,128,.12) 0%, transparent 60%);}
+  .app.tone-over{background:radial-gradient(ellipse 70% 38% at 50% 8%, rgba(248,113,113,.10) 0%, transparent 60%);}
+
+  .screen{display:none}
+  .screen.active{display:flex;flex-direction:column;flex:1}
+
+  /* ---------- Select screen ---------- */
+  .back-link{font-size:12px;color:var(--text-muted);font-weight:600;display:inline-block;margin-bottom:10px}
+  .back-link:hover{color:var(--text-primary)}
+  .hero{padding:8px 8px 4px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .hero-fox{width:88px;height:88px}
+  .hero h1{margin:0;font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:-.5px;line-height:1.05;
+    background:linear-gradient(135deg,#fff 40%,var(--accent-fox-game));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .hero p{margin:0;font-size:13.5px;line-height:1.5;color:var(--text-muted);max-width:280px}
+  .section-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:18px 4px 10px}
+  .table-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tile{border:1px solid var(--border-default);background:var(--surface-raised);border-radius:var(--radius-md);
+    padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .15s,border-color .15s,background .15s;font:inherit;color:inherit;}
+  .tile:hover{border-color:var(--border-hover);transform:translateY(-2px);background:var(--surface-raised-hover)}
+  .tile .num{font-family:var(--font-display);font-weight:700;font-size:20px}
+  .tile .tag{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim)}
+  .star-row{display:flex;gap:2px}
+
+  /* ---------- Game screen ---------- */
+  .hud{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .hearts{display:flex;gap:4px}
+  .hud .spacer{flex:1}
+  .badge{font-size:12.5px;font-weight:700;border-radius:var(--radius-pill);padding:5px 12px;border:1px solid var(--border-default);background:var(--surface-raised);color:var(--text-muted)}
+  .badge-table{color:var(--accent-fox-game);background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.35);font-weight:800}
+  .stop-btn{width:26px;height:26px;border-radius:var(--radius-pill);background:var(--surface-raised);border:1px solid var(--border-default);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .stop-btn:hover{background:var(--surface-raised-hover)}
+
+  .question-banner{text-align:center;background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:14px 10px;margin-bottom:12px}
+  .q-label{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px}
+  .q-text{font-family:var(--font-display);font-weight:800;font-size:32px;letter-spacing:-1px}
+  .q-eq{color:var(--accent-fox-game)}
+
+  .arena{position:relative;flex:1;min-height:340px;aspect-ratio:3/4;border-radius:22px;overflow:hidden;
+    background:radial-gradient(circle at 50% 45%, rgba(34,50,34,.9) 0%, rgba(8,14,10,.98) 75%);
+    border:1px solid var(--border-default); transition:border-color .25s, box-shadow .25s;}
+  .arena.flash-good{border-color:rgba(74,222,128,.7);box-shadow:0 0 0 3px rgba(74,222,128,.18) inset}
+  .arena.flash-bad{border-color:rgba(248,113,113,.7);box-shadow:0 0 0 3px rgba(248,113,113,.18) inset}
+
+  .corner{position:absolute;width:58px;height:58px;border-radius:var(--radius-pill);
+    background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);
+    transition:transform .18s,background .18s,border-color .18s,box-shadow .18s;}
+  .corner span{font-family:var(--font-display);font-weight:800;font-size:18px;color:rgba(241,245,249,.75)}
+  .corner.good{background:rgba(74,222,128,.22);border-color:rgba(74,222,128,.8);box-shadow:0 0 20px rgba(74,222,128,.35);transform:translate(-50%,-50%) scale(1.12)}
+  .corner.good span{color:#4ade80}
+  .corner.bad{background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.8);box-shadow:0 0 20px rgba(248,113,113,.3);animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% - 4px),-50%)}75%{transform:translate(calc(-50% + 4px),-50%)}}
+
+  .fox-wrap,.adversary{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));pointer-events:none}
+  .fox-wrap{width:64px;height:64px;z-index:5;transition:opacity .12s}
+  .fox-wrap.hit{animation:blink .18s steps(1) infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .adversary.wolf{width:64px;height:64px}
+  .adversary.scout{width:58px;height:71px}
+  .fox-wrap svg,.adversary svg{width:100%;height:100%;display:block}
+
+  .control-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+  .hint{font-size:11.5px;color:var(--text-muted);max-width:150px;line-height:1.4}
+  .joystick{width:92px;height:92px;border-radius:var(--radius-pill);background:var(--surface-raised);
+    border:1px solid var(--border-hover);position:relative;flex-shrink:0;touch-action:none;user-select:none}
+  .joystick-knob{position:absolute;width:40px;height:40px;border-radius:var(--radius-pill);
+    background:rgba(249,115,22,.55);border:1px solid rgba(249,115,22,.85);
+    top:50%;left:50%;transform:translate(-50%,-50%);transition:transform .05s linear;pointer-events:none}
+
+  /* ---------- Result screens ---------- */
+  .result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 8px;text-align:center;position:relative}
+  .result-fox{width:120px;height:120px}
+  .result h1{margin:12px 0 2px;font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.5px}
+  .result p{margin:0 0 20px;font-size:13.5px;color:var(--text-muted);max-width:280px}
+  .stars-big{display:flex;gap:10px;margin-bottom:22px}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-bottom:24px}
+  .stats-grid.two{grid-template-columns:repeat(2,1fr)}
+  .stat{background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:12px 6px;text-align:center}
+  .stat .val{font-family:var(--font-display);font-weight:700;font-size:17px}
+  .stat .lbl{font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .btn{width:100%;text-align:center;font-weight:700;font-size:15px;border-radius:var(--radius-md);padding:15px;
+    border:none;cursor:pointer;font-family:var(--font-body);display:block;margin-bottom:10px}
+  .btn-primary{background:var(--accent-fox-game);color:#1a0d00}
+  .btn-primary:hover{opacity:.9}
+  .btn-secondary{background:transparent;border:1px solid var(--border-default);color:var(--text-muted);font-weight:600;font-size:13.5px;padding:13px}
+  .btn-secondary:hover{border-color:var(--border-hover);color:var(--text-primary)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+<defs>
+  <radialGradient id="furGrad" cx="38%" cy="22%" r="85%">
+    <stop offset="0%" stop-color="#ffb27a"/><stop offset="55%" stop-color="#f97316"/><stop offset="100%" stop-color="#c2410c"/>
+  </radialGradient>
+  <radialGradient id="creamGrad" cx="40%" cy="15%" r="95%">
+    <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#ffdcae"/>
+  </radialGradient>
+  <linearGradient id="tailGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+    <stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#c2410c"/>
+  </linearGradient>
+  <radialGradient id="wolfFur" cx="35%" cy="18%" r="90%">
+    <stop offset="0%" stop-color="#cbd5e1"/><stop offset="55%" stop-color="#64748b"/><stop offset="100%" stop-color="#334155"/>
+  </radialGradient>
+  <radialGradient id="wolfCream" cx="40%" cy="15%" r="95%">
+    <stop offset="0%" stop-color="#f1f5f9"/><stop offset="100%" stop-color="#c3ccd8"/>
+  </radialGradient>
+  <radialGradient id="irisGrad" cx="40%" cy="35%" r="70%">
+    <stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#f59e0b"/>
+  </radialGradient>
+  <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.85"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="cloakGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+    <stop offset="0%" stop-color="#6d28d9"/><stop offset="55%" stop-color="#4338ca"/><stop offset="100%" stop-color="#1e1b4b"/>
+  </linearGradient>
+  <radialGradient id="hoodGrad" cx="35%" cy="15%" r="90%">
+    <stop offset="0%" stop-color="#7c3aed"/><stop offset="60%" stop-color="#4338ca"/><stop offset="100%" stop-color="#1e1b4b"/>
+  </radialGradient>
+  <radialGradient id="skinGrad" cx="40%" cy="25%" r="90%">
+    <stop offset="0%" stop-color="#ffe3c4"/><stop offset="100%" stop-color="#eab887"/>
+  </radialGradient>
+  <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#312e81"/><stop offset="100%" stop-color="#0f0c29"/>
+  </linearGradient>
+</defs>
+</svg>
+
+<div class="app tone-select" id="app">
+
+  <section id="screen-select" class="screen active">
+    <a class="back-link" href="index.html">← Tagasi Õppemängudesse</a>
+    <div class="hero">
+      <div class="hero-fox">__FOX_NEUTRAL__</div>
+      <h1>Rebase põgenemine</h1>
+      <p>Vali korrutustabel ja aita rebasel huntide eest metsa varju pääseda.</p>
+    </div>
+    <div class="section-label">Vali tabel</div>
+    <div class="table-grid" id="table-grid"></div>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <div class="hud">
+      <div class="hearts" id="hearts"></div>
+      <div class="spacer"></div>
+      <div class="badge" id="badge-wave">Laine 1/10</div>
+      <div class="badge badge-table" id="badge-table">×2</div>
+      <a href="#" class="stop-btn" id="stop-btn" aria-label="Peata mäng">
+        <svg width="11" height="11" viewBox="0 0 24 24"><path d="M4 4L20 20M20 4L4 20" stroke="rgba(241,245,249,.6)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </a>
+    </div>
+    <div class="question-banner">
+      <div class="q-label">Mis on vastus?</div>
+      <div class="q-text" id="q-text">2 × 1 <span class="q-eq">= ?</span></div>
+    </div>
+    <div class="arena" id="arena">
+      <div class="corner" id="corner-tl"><span></span></div>
+      <div class="corner" id="corner-tr"><span></span></div>
+      <div class="corner" id="corner-bl"><span></span></div>
+      <div class="corner" id="corner-br"><span></span></div>
+      <div class="fox-wrap" id="fox-wrap">__FOX_NEUTRAL__</div>
+    </div>
+    <div class="control-row">
+      <div class="hint">Liigu õigele numbrile enne kui hunt jõuab kohale</div>
+      <div class="joystick" id="joystick">
+        <div class="joystick-knob" id="joystick-knob"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-clear" class="screen">
+    <div class="result">
+      <svg width="24" height="24" viewBox="0 0 20 20" style="position:absolute;top:60px;left:30px;opacity:.8"><polygon points="10,1 12.7,7 19,7.6 14.2,11.9 15.6,18.1 10,14.8 4.4,18.1 5.8,11.9 1,7.6 7.3,7" fill="#fbbf24"/></svg>
+      <svg width="16" height="16" viewBox="0 0 20 20" style="position:absolute;top:110px;right:26px;opacity:.7"><polygon points="10,1 12.7,7 19,7.6 14.2,11.9 15.6,18.1 10,14.8 4.4,18.1 5.8,11.9 1,7.6 7.3,7" fill="#fbbf24"/></svg>
+      <div class="result-fox">__FOX_HAPPY__</div>
+      <h1>Tase läbitud!</h1>
+      <p id="clear-sub">Rebane pääses terve mööda ×2 tabelit.</p>
+      <div class="stars-big" id="clear-stars"></div>
+      <div class="stats-grid" id="clear-stats"></div>
+      <button class="btn btn-primary" id="btn-next-table">Järgmine tase →</button>
+      <button class="btn btn-secondary" id="btn-clear-back">Tagasi tabelite juurde</button>
+    </div>
+  </section>
+
+  <section id="screen-over" class="screen">
+    <div class="result">
+      <div class="result-fox" style="width:112px;height:112px">__FOX_SAD__</div>
+      <h1>Peaaegu said hakkama!</h1>
+      <p>Hundid said rebase kolmel korral kätte. Proovi uuesti — sa jõuad iga korraga kaugemale!</p>
+      <div class="stats-grid two" id="over-stats"></div>
+      <button class="btn btn-primary" id="btn-retry">Proovi uuesti →</button>
+      <button class="btn btn-secondary" id="btn-over-back">Vali teine tabel</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- SVG character art ---------------- */
+  function foxSvg(mood){
+    var face = {
+      neutral: '<g><ellipse cx="86" cy="75" rx="8.5" ry="10.5" fill="#2b1710"/><ellipse cx="86" cy="68" rx="9.5" ry="9" fill="url(#furGrad)"/><circle cx="83.5" cy="74" r="1.7" fill="#fff"/><circle cx="88" cy="78" r="0.8" fill="#fff" opacity="0.75"/><ellipse cx="120" cy="75" rx="8.5" ry="10.5" fill="#2b1710"/><ellipse cx="120" cy="68" rx="9.5" ry="9" fill="url(#furGrad)"/><circle cx="117.5" cy="74" r="1.7" fill="#fff"/><circle cx="122" cy="78" r="0.8" fill="#fff" opacity="0.75"/><path d="M96,108 Q103,113 110,108" stroke="#7c2d12" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>',
+      happy: '<g><path d="M77,72 Q86,64 95,72" stroke="#2b1710" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M111,72 Q120,64 129,72" stroke="#2b1710" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="72" cy="90" rx="9" ry="6" fill="#fca5a5" opacity="0.45"/><ellipse cx="134" cy="90" rx="9" ry="6" fill="#fca5a5" opacity="0.45"/><path d="M92,105 Q103,120 114,105 Q103,116 92,105 Z" fill="#7c2d12"/></g>',
+      sad: '<g><path d="M79,64 Q86,60 93,65" stroke="#7c2d12" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M113,65 Q120,60 127,64" stroke="#7c2d12" stroke-width="2.4" fill="none" stroke-linecap="round"/><ellipse cx="86" cy="77" rx="8" ry="8.5" fill="#2b1710"/><ellipse cx="86" cy="72" rx="9.5" ry="7.5" fill="url(#furGrad)"/><circle cx="84" cy="78" r="1.4" fill="#fff"/><ellipse cx="120" cy="77" rx="8" ry="8.5" fill="#2b1710"/><ellipse cx="120" cy="72" rx="9.5" ry="7.5" fill="url(#furGrad)"/><circle cx="118" cy="78" r="1.4" fill="#fff"/><path d="M96,111 Q103,107 110,111" stroke="#7c2d12" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>'
+    };
+    return '<svg viewBox="0 0 200 200">' +
+      '<ellipse cx="100" cy="189" rx="44" ry="7" fill="#000" opacity="0.25"/>' +
+      '<path d="M64,152 C20,140 8,96 30,54 C41,35 61,40 63,61 C48,80 45,111 68,141 Z" fill="url(#tailGrad)"/>' +
+      '<ellipse cx="39" cy="51" rx="15" ry="21" fill="url(#creamGrad)" transform="rotate(-32 39 51)"/>' +
+      '<path d="M48,96 C39,102 35,116 42,129" stroke="#9a3412" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.3"/>' +
+      '<ellipse cx="82" cy="179" rx="11" ry="7" fill="url(#furGrad)"/><ellipse cx="120" cy="179" rx="11" ry="7" fill="url(#furGrad)"/>' +
+      '<ellipse cx="100" cy="141" rx="47" ry="41" fill="url(#furGrad)"/>' +
+      '<ellipse cx="100" cy="170" rx="28" ry="9" fill="#7c2d12" opacity="0.16"/>' +
+      '<ellipse cx="100" cy="153" rx="27" ry="23" fill="url(#creamGrad)"/>' +
+      '<path d="M71,46 C62,20 69,1 84,9 C93,15 91,38 87,53 C80,51 75,49 71,46 Z" fill="url(#tailGrad)"/>' +
+      '<path d="M76,39 C71,24 75,13 84,18 C88,23 86,35 83,43 Z" fill="#7c2d12" opacity="0.5"/>' +
+      '<path d="M135,46 C144,20 137,1 122,9 C113,15 115,38 119,53 C126,51 131,49 135,46 Z" fill="url(#tailGrad)"/>' +
+      '<path d="M130,39 C135,24 131,13 122,18 C118,23 120,35 123,43 Z" fill="#7c2d12" opacity="0.5"/>' +
+      '<circle cx="103" cy="79" r="43" fill="url(#furGrad)"/>' +
+      '<ellipse cx="70" cy="93" rx="12" ry="9" fill="#ffb999" opacity="0.5"/><ellipse cx="136" cy="93" rx="12" ry="9" fill="#ffb999" opacity="0.5"/>' +
+      '<path d="M77,83 C77,102 88,114 103,114 C118,114 129,102 129,83 C118,94 88,94 77,83 Z" fill="url(#creamGrad)"/>' +
+      (face[mood]||face.neutral) +
+      '<ellipse cx="103" cy="100" rx="4.6" ry="3.3" fill="#2b1710"/><circle cx="101.6" cy="99" r="0.9" fill="#fff" opacity="0.7"/>' +
+      '</svg>';
+  }
+
+  function wolfSvg(){
+    return '<svg viewBox="0 0 200 200">' +
+      '<ellipse cx="101" cy="190" rx="46" ry="7" fill="#000" opacity="0.3"/>' +
+      '<path d="M60,150 C24,135 14,98 34,66 C44,50 60,55 60,73 C48,90 46,116 66,142 Z" fill="url(#wolfFur)"/>' +
+      '<ellipse cx="40" cy="70" rx="12" ry="17" fill="#94a3b8" transform="rotate(-28 40 70)"/>' +
+      '<polygon points="80,58 96,66 112,58 108,72 92,72" fill="url(#wolfFur)" opacity="0.9"/>' +
+      '<ellipse cx="83" cy="181" rx="11" ry="7" fill="url(#wolfFur)"/><ellipse cx="119" cy="181" rx="11" ry="7" fill="url(#wolfFur)"/>' +
+      '<ellipse cx="101" cy="145" rx="49" ry="40" fill="url(#wolfFur)"/>' +
+      '<ellipse cx="101" cy="172" rx="30" ry="9" fill="#1e293b" opacity="0.22"/>' +
+      '<ellipse cx="101" cy="156" rx="26" ry="21" fill="url(#wolfCream)"/>' +
+      '<path d="M68,50 C56,22 66,-2 84,9 C93,15 90,40 85,56 C78,54 72,53 68,50 Z" fill="url(#wolfFur)"/>' +
+      '<path d="M74,42 C68,26 73,12 83,20 C87,25 84,38 80,47 Z" fill="#1e293b" opacity="0.55"/>' +
+      '<path d="M134,50 C146,22 136,-2 118,9 C109,15 112,40 117,56 C124,54 130,53 134,50 Z" fill="url(#wolfFur)"/>' +
+      '<path d="M128,42 C134,26 129,12 119,20 C115,25 118,38 122,47 Z" fill="#1e293b" opacity="0.55"/>' +
+      '<circle cx="101" cy="80" r="41" fill="url(#wolfFur)"/>' +
+      '<path d="M101,88 C88,88 78,96 75,110 C82,122 92,127 101,127 C110,127 120,122 127,110 C124,96 114,88 101,88 Z" fill="url(#wolfCream)"/>' +
+      '<path d="M92,98 L110,98 L101,105 Z" fill="#475569" opacity="0.6"/>' +
+      '<ellipse cx="101" cy="115" rx="6" ry="4.4" fill="#1e293b"/><circle cx="99.4" cy="113.8" r="1" fill="#fff" opacity="0.7"/>' +
+      '<path d="M89,120 L94,124 L91,127 Z" fill="#f8fafc"/><path d="M113,120 L108,124 L111,127 Z" fill="#f8fafc"/>' +
+      '<path d="M79,66 Q86,60 94,65" stroke="#1e293b" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.7"/>' +
+      '<path d="M108,65 Q116,60 123,66" stroke="#1e293b" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.7"/>' +
+      '<circle cx="87" cy="78" r="14" fill="url(#eyeGlow)"/><circle cx="87" cy="78" r="6.4" fill="url(#irisGrad)"/><ellipse cx="87" cy="78" rx="1.8" ry="5" fill="#1c1917"/><circle cx="85" cy="75.5" r="1.3" fill="#fff"/>' +
+      '<circle cx="115" cy="78" r="14" fill="url(#eyeGlow)"/><circle cx="115" cy="78" r="6.4" fill="url(#irisGrad)"/><ellipse cx="115" cy="78" rx="1.8" ry="5" fill="#1c1917"/><circle cx="113" cy="75.5" r="1.3" fill="#fff"/>' +
+      '</svg>';
+  }
+
+  function scoutSvg(){
+    return '<svg viewBox="0 0 180 220">' +
+      '<ellipse cx="90" cy="212" rx="42" ry="7" fill="#000" opacity="0.3"/>' +
+      '<path d="M90,86 C48,92 26,132 34,212 L146,212 C154,132 132,92 90,86 Z" fill="url(#cloakGrad)"/>' +
+      '<path d="M90,86 C64,90 48,116 48,150 L90,164 L132,150 C132,116 116,90 90,86 Z" fill="url(#hoodGrad)" opacity="0.65"/>' +
+      '<path d="M64,120 C58,150 60,182 68,208" stroke="#1e1b4b" stroke-width="4" fill="none" opacity="0.4" stroke-linecap="round"/>' +
+      '<path d="M112,118 C120,148 118,180 110,208" stroke="#1e1b4b" stroke-width="4" fill="none" opacity="0.4" stroke-linecap="round"/>' +
+      '<path d="M32,128 Q16,158 26,206 L40,200 Q30,160 40,132 Z" fill="url(#cloakGrad)"/>' +
+      '<path d="M148,128 Q164,158 154,206 L140,200 Q150,160 140,132 Z" fill="url(#cloakGrad)"/>' +
+      '<path d="M90,42 C58,42 44,72 48,102 C58,84 74,74 90,74 C106,74 122,84 132,102 C136,72 122,42 90,42 Z" fill="url(#hoodGrad)"/>' +
+      '<polygon points="46,56 34,18 62,44" fill="url(#hairGrad)"/><polygon points="58,42 52,8 76,36" fill="url(#hairGrad)"/>' +
+      '<polygon points="122,42 128,8 104,36" fill="url(#hairGrad)"/><polygon points="134,56 146,18 118,44" fill="url(#hairGrad)"/>' +
+      '<path d="M46,56 L34,18 L62,44" fill="none" stroke="#818cf8" stroke-width="1.4" opacity="0.5"/>' +
+      '<path d="M134,56 L146,18 L118,44" fill="none" stroke="#818cf8" stroke-width="1.4" opacity="0.5"/>' +
+      '<path d="M62,76 C62,102 74,120 90,120 C106,120 118,102 118,76 C118,66 106,60 90,60 C74,60 62,66 62,76 Z" fill="url(#skinGrad)"/>' +
+      '<path d="M60,96 C60,124 72,140 90,140 C108,140 120,124 120,96 C120,116 106,128 90,128 C74,128 60,116 60,96 Z" fill="url(#hoodGrad)"/>' +
+      '<circle cx="72" cy="86" r="15" fill="url(#glowCyan)"/><ellipse cx="72" cy="86" rx="8" ry="9.5" fill="#0f172a"/>' +
+      '<ellipse cx="72" cy="80" rx="9" ry="7" fill="url(#skinGrad)"/><ellipse cx="72" cy="87" rx="4.6" ry="5.6" fill="#22d3ee"/>' +
+      '<ellipse cx="72" cy="87" rx="1.7" ry="4.4" fill="#0f172a"/><circle cx="70" cy="84" r="1.3" fill="#fff"/>' +
+      '<path d="M104,80 C104,88 108,94 114,94" stroke="#3b2f1f" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>' +
+      '</svg>';
+  }
+
+  var starIcon = '<svg viewBox="0 0 20 20"><polygon points="10,1 12.7,7 19,7.6 14.2,11.9 15.6,18.1 10,14.8 4.4,18.1 5.8,11.9 1,7.6 7.3,7"/></svg>';
+  var heartPath = 'M12 21s-7.5-4.7-10-9.3C0.4 8.1 2 4 6 4c2.3 0 3.8 1.3 6 3.6C14.2 5.3 15.7 4 18 4c4 0 5.6 4.1 4 7.7C19.5 16.3 12 21 12 21z';
+
+  document.getElementById('screen-select').querySelector('.hero-fox').innerHTML = foxSvg('neutral');
+  document.getElementById('fox-wrap').innerHTML = foxSvg('neutral');
+  document.querySelector('#screen-clear .result-fox').innerHTML = foxSvg('happy');
+  document.querySelector('#screen-over .result-fox').innerHTML = foxSvg('sad');
+
+  /* ---------------- Constants ---------------- */
+  var TOTAL_WAVES = 10;
+  var TABLES = [2,3,4,5,6,7,8,9,10,11,12];
+  var CORNERS = {
+    tl:{x:14,y:13}, tr:{x:86,y:13}, bl:{x:14,y:87}, br:{x:86,y:87}
+  };
+  var FOX_SPEED = 40;      // % of arena / second
+  var CATCH_R = 8;         // adversary catch radius (in % units)
+  var CORNER_R = 10;       // corner reach radius
+
+  /* ---------------- State ---------------- */
+  var state = {
+    screen: 'select',
+    table: 2,
+    wave: 1,
+    lives: 3,
+    waveOrder: [],
+    correctValue: null,
+    locked: false,
+    invuln: 0,
+    fox: {x:50,y:50},
+    adversaries: []
+  };
+
+  var dragging = false, stickVec = {x:0,y:0}, baseRect = null;
+  var keys = {};
+
+  /* ---------------- Screens ---------------- */
+  var appEl = document.getElementById('app');
+  function showScreen(name){
+    state.screen = name;
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('screen-'+name).classList.add('active');
+    appEl.className = 'app tone-' + name;
+  }
+
+  /* ---------------- Progress storage ---------------- */
+  function getStars(table){
+    var v = localStorage.getItem('rp_stars_'+table);
+    return v ? parseInt(v,10) : 0;
+  }
+  function setStars(table, stars){
+    var cur = getStars(table);
+    if(stars > cur) localStorage.setItem('rp_stars_'+table, String(stars));
+  }
+  function renderStarRow(container, count, size){
+    container.innerHTML = '';
+    for(var i=0;i<3;i++){
+      var wrap = document.createElement('span');
+      wrap.innerHTML = starIcon;
+      var svg = wrap.firstElementChild;
+      svg.setAttribute('width', size); svg.setAttribute('height', size);
+      svg.querySelector('polygon').setAttribute('fill', i < count ? '#fbbf24' : 'rgba(255,255,255,.15)');
+      container.appendChild(svg);
+    }
+  }
+
+  /* ---------------- Table select screen ---------------- */
+  function buildTableGrid(){
+    var grid = document.getElementById('table-grid');
+    grid.innerHTML = '';
+    TABLES.forEach(function(t){
+      var stars = getStars(t);
+      var tile = document.createElement('button');
+      tile.className = 'tile';
+      tile.type = 'button';
+      var numSpan = document.createElement('span');
+      numSpan.className = 'num';
+      numSpan.textContent = '×' + t;
+      tile.appendChild(numSpan);
+      if(stars > 0){
+        var row = document.createElement('span');
+        row.className = 'star-row';
+        tile.appendChild(row);
+        renderStarRow(row, stars, 11);
+      } else {
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = 'Uus';
+        tile.appendChild(tag);
+      }
+      tile.addEventListener('click', function(){ startGame(t); });
+      grid.appendChild(tile);
+    });
+  }
+
+  /* ---------------- Game setup ---------------- */
+  function shuffle(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr;
+  }
+
+  function startGame(table){
+    state.table = table;
+    state.wave = 1;
+    state.lives = 3;
+    state.waveOrder = shuffle([1,2,3,4,5,6,7,8,9,10]);
+    document.getElementById('badge-table').textContent = '×' + table;
+    updateHearts();
+    showScreen('game');
+    setupWave();
+  }
+
+  function rosterForWave(wave){
+    if(wave <= 3) return ['wolf'];
+    if(wave <= 7) return ['wolf','wolf'];
+    return ['wolf','scout'];
+  }
+
+  function speedForWave(wave, type){
+    var base = 15 + wave * 1.6;
+    if(base > 30) base = 30;
+    if(type === 'scout') base *= 1.12;
+    return base;
+  }
+
+  function genAnswers(a,b){
+    var correct = a*b;
+    var pool = {};
+    function tryAdd(v){ if(v>0 && v!==correct) pool[v]=true; }
+    if(b+1<=10) tryAdd(a*(b+1));
+    if(b-1>=1) tryAdd(a*(b-1));
+    if(b+2<=10) tryAdd(a*(b+2));
+    if(b-2>=1) tryAdd(a*(b-2));
+    tryAdd(correct+a); tryAdd(correct-a);
+    [2,3,4,5,-2,-3,-4,-5].forEach(function(off){
+      var v = correct+off;
+      if(v>0 && v%a!==0) tryAdd(v);
+    });
+    var arr = shuffle(Object.keys(pool).map(Number));
+    var distractors = arr.slice(0,3);
+    var filler = 1;
+    var guard = 0;
+    while(distractors.length < 3 && guard < 40){
+      guard++;
+      var v = correct + filler;
+      if(v>0 && v!==correct && distractors.indexOf(v)===-1) distractors.push(v);
+      filler = filler>0 ? -(filler+1) : (-filler+1);
+    }
+    var all = shuffle([correct].concat(distractors));
+    return { correct: correct, values: all };
+  }
+
+  var cornerKeys = ['tl','tr','bl','br'];
+
+  function setupWave(){
+    var b = state.waveOrder[state.wave-1];
+    var ans = genAnswers(state.table, b);
+    state.correctValue = ans.correct;
+    cornerKeys.forEach(function(k, i){
+      var el = document.getElementById('corner-'+k);
+      el.querySelector('span').textContent = ans.values[i];
+      el.dataset.value = ans.values[i];
+      el.classList.remove('good','bad');
+      el.style.left = CORNERS[k].x + '%';
+      el.style.top = CORNERS[k].y + '%';
+    });
+    document.getElementById('q-text').innerHTML = state.table + ' × ' + b + ' <span class="q-eq">= ?</span>';
+    document.getElementById('badge-wave').textContent = 'Laine ' + state.wave + '/' + TOTAL_WAVES;
+
+    resetPositions();
+    lockFor(650);
+  }
+
+  function farEnoughFromCorners(x, y){
+    for(var k in CORNERS){
+      if(dist({x:x,y:y}, CORNERS[k]) < 24) return false;
+    }
+    return true;
+  }
+
+  function resetPositions(){
+    state.fox.x = 50; state.fox.y = 50;
+    var arena = document.getElementById('arena');
+    arena.querySelectorAll('.adversary').forEach(function(el){ el.remove(); });
+    state.adversaries = [];
+    var roster = rosterForWave(state.wave);
+    var basePhase = Math.random() * Math.PI * 2;
+    var spawnR = 32;
+    roster.forEach(function(type, idx){
+      var el = document.createElement('div');
+      el.className = 'adversary ' + type;
+      el.innerHTML = type === 'scout' ? scoutSvg() : wolfSvg();
+      arena.appendChild(el);
+      var angle, x, y, tries = 0;
+      do {
+        angle = basePhase + (idx / roster.length) * Math.PI * 2 + (Math.random()-0.5) * 1.1;
+        x = clamp(50 + Math.cos(angle)*spawnR, 10, 90);
+        y = clamp(50 + Math.sin(angle)*spawnR*1.05, 10, 90);
+        tries++;
+      } while(!farEnoughFromCorners(x, y) && tries < 10);
+      state.adversaries.push({
+        el: el, type: type,
+        x: x, y: y,
+        dirx: 0, diry: 0,
+        speed: speedForWave(state.wave, type),
+        retarget: 0,
+        dashTimer: 1 + Math.random()*2
+      });
+    });
+  }
+
+  function lockFor(ms){
+    state.locked = true;
+    setTimeout(function(){ state.locked = false; }, ms);
+  }
+
+  function updateHearts(){
+    var wrap = document.getElementById('hearts');
+    wrap.innerHTML = '';
+    for(var i=0;i<3;i++){
+      var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','20'); svg.setAttribute('height','20'); svg.setAttribute('viewBox','0 0 24 24');
+      var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d', heartPath);
+      if(i < state.lives){
+        path.setAttribute('fill', '#f87171');
+      } else {
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke','rgba(241,245,249,.3)');
+        path.setAttribute('stroke-width','1.6');
+      }
+      svg.appendChild(path);
+      wrap.appendChild(svg);
+    }
+  }
+
+  /* ---------------- Controls ---------------- */
+  var joystick = document.getElementById('joystick');
+  var knob = document.getElementById('joystick-knob');
+
+  function stickStart(e){
+    dragging = true;
+    baseRect = joystick.getBoundingClientRect();
+    stickUpdate(e);
+  }
+  function stickMove(e){ if(dragging) stickUpdate(e); }
+  function stickEnd(){
+    dragging = false;
+    stickVec = {x:0,y:0};
+    knob.style.transform = 'translate(-50%,-50%)';
+  }
+  function stickUpdate(e){
+    var cx = baseRect.left + baseRect.width/2;
+    var cy = baseRect.top + baseRect.height/2;
+    var px = e.clientX, py = e.clientY;
+    var dx = px - cx, dy = py - cy;
+    var maxR = baseRect.width/2 - 20;
+    var dist = Math.hypot(dx,dy);
+    if(dist > maxR){ dx = dx/dist*maxR; dy = dy/dist*maxR; }
+    knob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+    stickVec.x = dx / maxR;
+    stickVec.y = dy / maxR;
+  }
+  joystick.addEventListener('pointerdown', function(e){ joystick.setPointerCapture && joystick.setPointerCapture(e.pointerId); stickStart(e); });
+  window.addEventListener('pointermove', stickMove);
+  window.addEventListener('pointerup', stickEnd);
+  window.addEventListener('pointercancel', stickEnd);
+
+  window.addEventListener('keydown', function(e){ keys[e.key] = true; });
+  window.addEventListener('keyup', function(e){ keys[e.key] = false; });
+
+  function inputVec(){
+    if(dragging && (Math.abs(stickVec.x) > 0.05 || Math.abs(stickVec.y) > 0.05)) return stickVec;
+    var x=0,y=0;
+    if(keys.ArrowLeft || keys.a || keys.A) x -= 1;
+    if(keys.ArrowRight || keys.d || keys.D) x += 1;
+    if(keys.ArrowUp || keys.w || keys.W) y -= 1;
+    if(keys.ArrowDown || keys.s || keys.S) y += 1;
+    if(x && y){ x *= 0.7071; y *= 0.7071; }
+    return {x:x,y:y};
+  }
+
+  /* ---------------- Loop ---------------- */
+  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  function updateFox(dt){
+    var v = inputVec();
+    var mag = Math.hypot(v.x, v.y);
+    if(mag > 0.05){
+      state.fox.x = clamp(state.fox.x + v.x*FOX_SPEED*dt, 7, 93);
+      state.fox.y = clamp(state.fox.y + v.y*FOX_SPEED*dt, 7, 93);
+    }
+  }
+
+  function updateAdversaries(dt){
+    state.adversaries.forEach(function(a){
+      a.retarget -= dt;
+      if(a.retarget <= 0){
+        a.retarget = 0.35 + Math.random()*0.3;
+        var ang = Math.atan2(state.fox.y - a.y, state.fox.x - a.x) + (Math.random()-0.5)*0.5;
+        a.dirx = Math.cos(ang); a.diry = Math.sin(ang);
+      }
+      var speed = a.speed;
+      if(a.type === 'scout'){
+        a.dashTimer -= dt;
+        if(a.dashTimer <= 0){
+          speed *= 1.7;
+          if(a.dashTimer < -0.35) a.dashTimer = 2 + Math.random()*2;
+        }
+      }
+      var sepx=0, sepy=0;
+      state.adversaries.forEach(function(b){
+        if(b!==a){
+          var dx=a.x-b.x, dy=a.y-b.y;
+          var d = Math.hypot(dx,dy) || 0.001;
+          if(d < 14){ sepx += dx/d*(14-d)*0.6; sepy += dy/d*(14-d)*0.6; }
+        }
+      });
+      a.x = clamp(a.x + a.dirx*speed*dt + sepx*dt, 5, 95);
+      a.y = clamp(a.y + a.diry*speed*dt + sepy*dt, 5, 95);
+    });
+  }
+
+  function checkCollisions(){
+    if(state.locked) return;
+    for(var i=0;i<state.adversaries.length;i++){
+      if(dist(state.fox, state.adversaries[i]) < CATCH_R){ handleMiss(); return; }
+    }
+    for(var k in CORNERS){
+      if(dist(state.fox, CORNERS[k]) < CORNER_R){
+        var el = document.getElementById('corner-'+k);
+        var val = parseInt(el.dataset.value,10);
+        if(val === state.correctValue) handleCorrect(el);
+        else handleMiss(el);
+        return;
+      }
+    }
+  }
+
+  function flashArena(good){
+    var arena = document.getElementById('arena');
+    arena.classList.add(good ? 'flash-good' : 'flash-bad');
+    setTimeout(function(){ arena.classList.remove(good ? 'flash-good' : 'flash-bad'); }, 350);
+  }
+
+  function handleCorrect(cornerEl){
+    state.locked = true;
+    if(cornerEl){ cornerEl.classList.add('good'); }
+    flashArena(true);
+    setTimeout(function(){
+      if(cornerEl) cornerEl.classList.remove('good');
+      if(state.wave >= TOTAL_WAVES){
+        finishLevel();
+      } else {
+        state.wave += 1;
+        setupWave();
+      }
+    }, 550);
+  }
+
+  function handleMiss(cornerEl){
+    state.locked = true;
+    if(cornerEl) cornerEl.classList.add('bad');
+    flashArena(false);
+    document.getElementById('fox-wrap').classList.add('hit');
+    state.lives -= 1;
+    updateHearts();
+    setTimeout(function(){
+      if(cornerEl) cornerEl.classList.remove('bad');
+      document.getElementById('fox-wrap').classList.remove('hit');
+      if(state.lives <= 0){
+        gameOver();
+      } else {
+        resetPositions();
+        lockFor(500);
+      }
+    }, 550);
+  }
+
+  function finishLevel(){
+    setStars(state.table, state.lives);
+    document.getElementById('clear-sub').textContent = 'Rebane pääses terve mööda ×' + state.table + ' tabelit.';
+    renderStarRow(document.getElementById('clear-stars'), state.lives, 30);
+    var statsWrap = document.getElementById('clear-stats');
+    statsWrap.innerHTML =
+      stat(TOTAL_WAVES+'/'+TOTAL_WAVES, 'Lained', '#4ade80') +
+      stat(state.lives+'/3', 'Elud alles', state.lives>1 ? '#4ade80' : '#f87171') +
+      stat('×'+state.table, 'Tabel', '#f97316');
+    var nextIdx = TABLES.indexOf(state.table)+1;
+    var nextBtn = document.getElementById('btn-next-table');
+    if(nextIdx < TABLES.length){
+      nextBtn.style.display = '';
+      nextBtn.textContent = 'Järgmine tase (×' + TABLES[nextIdx] + ') →';
+      nextBtn.onclick = function(){ startGame(TABLES[nextIdx]); };
+    } else {
+      nextBtn.style.display = 'none';
+    }
+    showScreen('clear');
+  }
+
+  function gameOver(){
+    var statsWrap = document.getElementById('over-stats');
+    statsWrap.innerHTML =
+      stat(state.wave+'/'+TOTAL_WAVES, 'Laineid jõutud', '#60a5fa') +
+      stat('×'+state.table, 'Tabel', '#f97316');
+    showScreen('over');
+  }
+
+  function stat(val, label, color){
+    return '<div class="stat"><div class="val" style="color:'+color+'">'+val+'</div><div class="lbl">'+label+'</div></div>';
+  }
+
+  function render(){
+    var fw = document.getElementById('fox-wrap');
+    fw.style.left = state.fox.x + '%';
+    fw.style.top = state.fox.y + '%';
+    state.adversaries.forEach(function(a){
+      a.el.style.left = a.x + '%';
+      a.el.style.top = a.y + '%';
+      var ang = clamp(a.dirx * 14, -14, 14);
+      a.el.style.transform = 'translate(-50%,-50%) rotate(' + ang + 'deg)';
+    });
+  }
+
+  var last = null;
+  function loop(now){
+    if(last === null) last = now;
+    var dt = Math.min((now-last)/1000, 0.05);
+    last = now;
+    if(state.screen === 'game'){
+      updateFox(dt);
+      if(!state.locked) updateAdversaries(dt);
+      checkCollisions();
+      render();
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* ---------------- Navigation ---------------- */
+  document.getElementById('stop-btn').addEventListener('click', function(e){
+    e.preventDefault();
+    showScreen('select');
+    buildTableGrid();
+  });
+  document.getElementById('btn-clear-back').addEventListener('click', function(){
+    showScreen('select'); buildTableGrid();
+  });
+  document.getElementById('btn-over-back').addEventListener('click', function(){
+    showScreen('select'); buildTableGrid();
+  });
+  document.getElementById('btn-retry').addEventListener('click', function(){
+    startGame(state.table);
+  });
+
+  buildTableGrid();
+})();
+</script>
+</body>
+</html>
